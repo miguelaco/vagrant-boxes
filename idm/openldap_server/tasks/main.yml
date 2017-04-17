@@ -1,0 +1,37 @@
+---
+
+- name: Install ldap required packages
+  apt: name={{ item }} state=installed
+  with_items: "{{ openldap_server_pkgs }}"
+
+- name: Setup olcSuffix
+  ldap_attr:
+    dn: olcDatabase={1}mdb,cn=config
+    name: olcSuffix
+    values: "{{ suffix }}"
+    state: exact
+
+- name: Setup olcRootDN
+  ldap_attr:
+    dn: olcDatabase={1}mdb,cn=config
+    name: olcRootDN
+    values: "{{ rootDN }}"
+    state: exact
+
+- name: Generate the root password
+  shell: slappasswd -s {{ rootPW }} 
+  register: rootPW_hash
+
+- name: Setup olcRootPW
+  ldap_attr:
+    dn: olcDatabase={1}mdb,cn=config
+    name: olcRootPW
+    values: "{{ rootPW_hash.stdout }}"
+    state: exact
+
+- name: Setup suffix
+  ldap_entry:
+    bind_dn: "{{ rootDN }}"
+    bind_pw: "{{ rootPW }}"
+    dn: "{{ suffix }}"
+    objectClass: domain

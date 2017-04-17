@@ -1,0 +1,5 @@
+---
+- hosts: test_group
+  roles:
+     - { role: openldap_server, become: yes }
+     

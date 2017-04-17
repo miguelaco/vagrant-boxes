@@ -1,0 +1,7 @@
+[test_group]
+test1
+test2
+
+[test_group:vars]
+ldap_package = slapd
+ldap_base_dn = "dc=stratio,dc=com"

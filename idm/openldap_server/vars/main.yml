@@ -1,0 +1,11 @@
+openldap_server_pkgs:
+  - slapd
+  - ldap-utils
+  - python-ldap
+
+suffix: dc=stratio,dc=com
+
+rootDN: cn=admin, {{ suffix }}
+
+rootPW: secret
+
