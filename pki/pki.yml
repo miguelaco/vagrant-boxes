@@ -7,32 +7,16 @@
 
   - name: Base CA paths created
     file:
-      path: "{{ item }}"
+      path: "/root/{{ item[0] }}/{{ item[1] }}"
       state: directory
-    with_items:
-      - /root/ca
-      - /root/ca/certs
-      - /root/ca/crl
-      - /root/ca/newcerts
+    with_nested:
+      - [ 'ca', 'ca/intermediate' ]
+      - [ 'certs', 'crl', 'newcerts' ]
 
   - name: Private CA path created
     file:
-      path: /root/ca/private
+      path: /root/{{ item }}/private
       state: directory
       mode: 0700
-
-  - name: Base Intermediate CAs paths created
-    file:
-      path: "{{ item }}"
-      state: directory
     with_items:
-      - /root/ca/intermediate
-      - /root/ca/intermediate/certs
-      - /root/ca/intermediate/crl
-      - /root/ca/intermediate/newcerts
-
-  - name: Private Intermediate CAs path created
-    file:
-      path: /root/ca/intermediate/private
-      state: directory
-      mode: 0700
+      - [ 'ca', 'ca/intermediate' ]
