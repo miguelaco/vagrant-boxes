@@ -1,0 +1,38 @@
+---
+- hosts: all
+  become: yes
+  tasks:
+  - name: Install required packages
+    apt: name=openssl state=installed
+
+  - name: Base CA paths created
+    file:
+      path: "{{ item }}"
+      state: directory
+    with_items:
+      - /root/ca
+      - /root/ca/certs
+      - /root/ca/crl
+      - /root/ca/newcerts
+
+  - name: Private CA path created
+    file:
+      path: /root/ca/private
+      state: directory
+      mode: 0700
+
+  - name: Base Intermediate CAs paths created
+    file:
+      path: "{{ item }}"
+      state: directory
+    with_items:
+      - /root/ca/intermediate
+      - /root/ca/intermediate/certs
+      - /root/ca/intermediate/crl
+      - /root/ca/intermediate/newcerts
+
+  - name: Private Intermediate CAs path created
+    file:
+      path: /root/ca/intermediate/private
+      state: directory
+      mode: 0700
