@@ -1,22 +1,5 @@
 ---
 - hosts: all
-  become: yes
-  tasks:
-  - name: Install required packages
-    apt: name=openssl state=installed
-
-  - name: Base CA paths created
-    file:
-      path: "/root/{{ item[0] }}/{{ item[1] }}"
-      state: directory
-    with_nested:
-      - [ 'ca', 'ca/intermediate' ]
-      - [ 'certs', 'crl', 'newcerts' ]
-
-  - name: Private CA path created
-    file:
-      path: /root/{{ item }}/private
-      state: directory
-      mode: 0700
-    with_items:
-      - [ 'ca', 'ca/intermediate' ]
+  roles:
+     - { role: certificate_authority, become: yes, domain: stratio.com }
+     
