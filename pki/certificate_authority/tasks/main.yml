@@ -74,7 +74,13 @@
     chdir: /root/ca
     creates: intermediate/certs/intermediate.cert.pem
 
-#- name: Check intermediate CA cert
-#  command: openssl x509 -noout -in certs/ca.cert.pem
-#  args:
-#    chdir: /root/ca
+- name: Check intermediate CA cert
+  command: openssl x509 -noout -in intermediate/certs/intermediate.cert.pem
+  args:
+    chdir: /root/ca
+
+- name: Create CA chain file
+  shell: 'cat intermediate/certs/intermediate.cert.pem certs/ca.cert.pem > intermediate/certs/ca-chain.cert.pem'
+  args:
+    chdir: /root/ca
+    creates: intermediate/certs/ca-chain.cert.pem
