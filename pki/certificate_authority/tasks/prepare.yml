@@ -1,0 +1,36 @@
+---
+
+- name: Install required packages
+  apt: name=openssl state=installed
+
+- name: Base CA paths created
+  file:
+    path: "/root/{{ item[0] }}/{{ item[1] }}"
+    state: directory
+  with_nested:
+    - [ 'ca', 'ca/intermediate' ]
+    - [ 'certs', 'crl', 'csr', 'newcerts' ]
+
+- name: Private CA path created
+  file:
+    path: /root/{{ item }}/private
+    state: directory
+    mode: 0700
+  with_items:
+    - [ 'ca', 'ca/intermediate' ]
+
+- name: Index files created
+  copy: src=index.txt dest=/root/{{ item }}/index.txt force=no
+  with_items:
+    - [ 'ca', 'ca/intermediate' ]
+
+- name: Serial files created
+  copy: content=1000 dest=/root/{{ item }}/serial force=no
+  with_items:
+    - [ 'ca', 'ca/intermediate' ]
+
+- name: Root CA openssl configuration set
+  template: src=openssl_root_ca.cnf.j2 dest=/root/ca/openssl.cnf
+
+- name: Intermediate CA openssl configuration set
+  template: src=openssl_intermediate_ca.cnf.j2 dest=/root/ca/intermediate/openssl.cnf

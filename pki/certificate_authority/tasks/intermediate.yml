@@ -1,0 +1,32 @@
+---
+
+- name: Intermediate CA private key created
+  command: openssl genrsa -aes256 -passout pass:secret -out intermediate/private/intermediate.key.pem 4096
+  args:
+    chdir: /root/ca
+    creates: intermediate/private/intermediate.key.pem
+
+- file: path=/root/ca/intermediate/private/intermediate.key.pem mode=0400
+
+- name: Create intermediate CSR
+  command: openssl req -config intermediate/openssl.cnf -key intermediate/private/intermediate.key.pem -passin pass:secret -new -sha256 -subj "/O=Miguelaco's Home/CN=Miguelaco Intermediate CA" -extensions v3_ca -out intermediate/csr/intermediate.csr.pem
+  args:
+    chdir: /root/ca
+    creates: intermediate/csr/intermediate.csr.pem
+
+- name: Sign intermediate CSR
+  command: openssl ca -config openssl.cnf -extensions v3_intermediate_ca -days 3650 -passin pass:secret -notext -batch -md sha256 -in intermediate/csr/intermediate.csr.pem -out intermediate/certs/intermediate.cert.pem
+  args:
+    chdir: /root/ca
+    creates: intermediate/certs/intermediate.cert.pem
+
+- name: Check intermediate CA cert
+  command: openssl x509 -noout -in intermediate/certs/intermediate.cert.pem
+  args:
+    chdir: /root/ca
+
+- name: Create CA chain file
+  shell: 'cat intermediate/certs/intermediate.cert.pem certs/ca.cert.pem > intermediate/certs/ca-chain.cert.pem'
+  args:
+    chdir: /root/ca
+    creates: intermediate/certs/ca-chain.cert.pem
