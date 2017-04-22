@@ -1,7 +1,7 @@
 ---
 
 - name: Root CA private key created
-  command: openssl genrsa -aes256 -passout pass:secret -out private/ca.key.pem 4096
+  command: openssl genrsa -aes256 -passout pass:{{ root.keypass }} -out private/ca.key.pem 4096
   args:
     chdir: /root/ca
     creates: private/ca.key.pem
@@ -9,7 +9,7 @@
 - file: path=/root/ca/private/ca.key.pem mode=0400
 
 - name: Create root CA cert
-  command: openssl req -config openssl.cnf -key private/ca.key.pem -passin pass:secret -new -x509 -days 7300 -sha256 -subj "/O=Miguelaco's Home/CN=Miguelaco Root CA" -extensions v3_ca -out certs/ca.cert.pem
+  command: openssl req -config openssl.cnf -key private/ca.key.pem -passin pass:{{ root.keypass }} -new -x509 -days 7300 -sha256 -subj "{{ root.subject }}" -extensions v3_ca -out certs/ca.cert.pem
   args:
     chdir: /root/ca
     creates: certs/ca.cert.pem

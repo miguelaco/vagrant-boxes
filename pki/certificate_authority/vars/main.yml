@@ -1,0 +1,7 @@
+root:
+  keypass: changeit
+  subject: /O=Miguelaco's Home/CN=Miguelaco Root CA
+
+intermediate:
+  keypass: another
+  subject: /O=Miguelaco's Home/CN=Miguelaco Intermediate CA

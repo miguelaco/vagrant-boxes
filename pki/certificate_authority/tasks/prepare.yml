@@ -29,11 +29,8 @@
   with_items:
     - [ 'ca', 'ca/intermediate' ]
 
-- name: Openssl configuration set
+- name: OpenSSL configuration set
   template: src=openssl_{{ item.name }}_ca.cnf.j2 dest=/root/{{ item.path }}/openssl.cnf
   with_items:
     - { name: root, path: ca }
     - { name: intermediate, path: ca/intermediate }
-
-- name: Intermediate CA openssl configuration set
-  template: src=openssl_intermediate_ca.cnf.j2 dest=/root/ca/intermediate/openssl.cnf
