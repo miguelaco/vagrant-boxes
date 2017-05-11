@@ -1,20 +1,5 @@
 ---
 
-- name: Download consul package locally
-  local_action:
-    get_url
-      url=https://releases.hashicorp.com/consul/{{ consul_version }}/consul_{{ consul_version }}_linux_amd64.zip
-      dest=consul/files
-      force=no
-  become: no
-
-- package: name=unzip state=installed
-
-- name: Copy consul package to hosts
-  unarchive:
-    src=files/consul_{{ consul_version }}_linux_amd64.zip
-    dest=/opt/consul/bin
-
 - name: Create consul group
   group:
     name=consul
@@ -40,6 +25,21 @@
     - "{{ consul_home }}/cert"
     - "{{ consul_home }}/data"
     - "{{ consul_config_dir }}"
+
+- name: Download consul package locally
+  local_action:
+    get_url
+      url=https://releases.hashicorp.com/consul/{{ consul_version }}/consul_{{ consul_version }}_linux_amd64.zip
+      dest=consul/files
+      force=no
+  become: no
+
+- package: name=unzip state=installed
+
+- name: Copy consul package to hosts
+  unarchive:
+    src=files/consul_{{ consul_version }}_linux_amd64.zip
+    dest=/opt/consul/bin
 
 - name: Touch the log file
   file:
