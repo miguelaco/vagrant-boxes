@@ -1,0 +1,15 @@
+{
+  "server": {{ "true" if consul_is_server else "false"}},
+  "domain": "consul.",
+  "data_dir": "{{ consul_home }}/data",
+{% set consul_addr = ansible_all_ipv4_addresses | ipaddr(consul_advertise_addr) | first %}
+  "bind_addr": "{{ consul_addr }}",
+  "advertise_addr": "{{ consul_addr }}",
+  "recursors": [ "8.8.8.8", "8.8.4.4" ],
+{% set consul_join=[] %}
+{% for h in groups['all'] %}
+{%   if consul_join.extend(hostvars[h]['ansible_all_ipv4_addresses']) %} {% endif %}
+{% endfor %}
+  "retry_join": [ "{{ consul_join | ipaddr(consul_advertise_addr) | difference(consul_addr) | join('", "') }}" ],
+  "bootstrap_expect": 2
+ }

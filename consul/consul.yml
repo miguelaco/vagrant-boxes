@@ -1,0 +1,16 @@
+---
+- hosts: all
+
+  vars:
+    
+    consul_version: 0.8.2
+    consul_is_server: true
+    consul_home: /opt/consul
+    consul_log_dir: /var/log
+    consul_config_dir: /etc/consul.d
+    consul_config_file: /etc/consul.json
+    consul_advertise_addr: 192.168.77.21/24
+
+  roles:
+     - { role: consul, become: yes }
+     
