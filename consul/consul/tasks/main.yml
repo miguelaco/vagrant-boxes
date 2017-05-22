@@ -1,9 +1,7 @@
 ---
 
 - name: Create consul group
-  group:
-    name=consul
-    system=yes
+  group: name=consul system=yes
 
 - name: Create consul user
   user:
@@ -18,7 +16,6 @@
     owner: consul
     group: consul
     mode: 0755
-  
   with_items:
     - "{{ consul_home }}"
     - "{{ consul_home }}/bin"
@@ -39,7 +36,7 @@
 - name: Copy consul package to hosts
   unarchive:
     src=files/consul_{{ consul_version }}_linux_amd64.zip
-    dest=/opt/consul/bin
+    dest={{ consul_home }}/bin
 
 - name: Touch the log file
   file:

@@ -1,0 +1,11 @@
+---
+
+- name: Start vault service
+  systemd:
+    name: vault
+    state: restarted
+    enabled: yes
+    daemon-reload: yes
+
+- name: Update CA certificates
+  command: update-ca-certificates

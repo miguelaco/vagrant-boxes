@@ -1,0 +1,103 @@
+---
+
+- name: Create vault group
+  group: name=vault system=yes
+
+- name: Create vault user
+  user:
+    name=vault
+    group=vault
+    system=yes
+
+- name: Create vault directory
+  file:
+    path: "{{ item }}"
+    state: directory
+    owner: vault
+    group: vault
+    mode: 0755
+  with_items:
+    - "{{ vault_home }}"
+    - "{{ vault_home }}/bin"
+    - "{{ vault_home }}/log"
+    - "{{ vault_home }}/conf"
+    - "{{ vault_home }}/conf/secrets"
+
+- name: Download vault package locally
+  local_action:
+    get_url
+      url=https://releases.hashicorp.com/vault/{{vault_version}}/vault_{{vault_version}}_linux_amd64.zip
+      dest=vault/files
+      force=no
+  become: no
+
+- name: Copy vault package to hosts
+  unarchive:
+    src=files/vault_{{ vault_version }}_linux_amd64.zip
+    dest={{ vault_home }}/bin
+
+### CONFIGURE VAULT ###
+
+- name: Install CA
+  copy:
+    src: "files/miguelaco.crt"
+    dest: "/usr/local/share/ca-certificates"
+  notify:
+    - Update CA certificates
+
+- name: Copy vault certs
+  copy:
+    src: "{{ item }}"
+    dest: "{{ vault_home }}/conf/secrets"
+  with_items:
+    - "vault.service.consul.key.pem"
+    - "vault.service.consul.cert.pem"
+
+- name: Copy vault config file
+  template:
+    src={{ item.src }}
+    dest={{ item.dest }}
+    owner=vault
+    group=vault
+    mode={{ item.mode }}
+  with_items:
+    - { src: "config.hcl.j2", dest: "{{ vault_home }}/conf/config.hcl", mode: "0600" }
+    - { src: "vault-systemd.j2", dest: "/etc/systemd/system/vault.service", mode: "0644" }
+  notify:
+    - Start vault service
+
+- name: Set mlock capabilities for vault
+  shell: setcap cap_ipc_lock=+ep {{ vault_home }}/bin/vault
+
+# 1. set PATH to invoke vault easily
+# 2. configure DNS resolution in nodes
+# 3. make vault listen in all interfaces
+
+### CONFIGURE VAULT SECRETS ###
+
+#- name: Move vault crt
+#  copy:
+#    src: vault.crt
+#    dest: "{{secrets_dir}}/{{ vault_crt }}"
+#  when: configure
+#  tags: [vault, move_vault_crt]
+
+#- name: Move vault key
+#  copy:
+#    src: vault.key
+#    dest: "{{secrets_dir}}/{{ vault_key }}"
+#  when: configure
+#  tags: [vault, move_vault_key]
+
+#- name: Vault pass
+#  shell: java -cp {{ vault_zk_dir }}/zookeeper-{{zookeeper_version}}.jar:{{ vault_zk_dir }}/lib/log4j-1.2.16.jar:{{ vault_zk_dir }}/lib/slf4j-log4j12-1.6.1.jar:{{ vault_zk_dir }}/lib/slf4j-api-1.6.1.jar  org.apache.zookeeper.server.auth.DigestAuthenticationProvider "vault:{{vault_zk_pass}}"
+#  register: vault_pass_digest
+#  when: configure
+#  tags: [vault, vault_zk_pass]
+
+#- name: Vault hcl file with security
+#  template:
+#    src: vault.security.hcl.j2
+#    dest: "{{ install_dir }}/vault-{{vault_version}}/conf/vault.hcl"
+#  when: configure
+#  tags: [vault, vault_hcl]
