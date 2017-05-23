@@ -62,6 +62,8 @@
   with_items:
     - "vault.service.consul.key.pem"
     - "vault.service.consul.cert.pem"
+  notify:
+    - Start vault service
 
 - name: Copy vault config file
   template:

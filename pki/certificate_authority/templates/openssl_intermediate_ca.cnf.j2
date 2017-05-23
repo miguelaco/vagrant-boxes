@@ -110,7 +110,14 @@ nsComment = "OpenSSL Generated Server Certificate"
 subjectKeyIdentifier = hash
 authorityKeyIdentifier = keyid,issuer:always
 keyUsage = critical, digitalSignature, keyEncipherment
-extendedKeyUsage = serverAuth
+extendedKeyUsage = serverAuth, clientAuth
+#subjectAltName = @alt_names
+
+[alt_names]
+DNS.1 = vault.service.consul
+DNS.2 = active.vault.service.consul
+DNS.3 = test1.node.consul
+DNS.4 = test2.node.consul
 
 [ crl_ext ]
 # Extension for CRLs (`man x509v3_config`).

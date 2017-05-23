@@ -5,11 +5,23 @@
 {% set consul_addr = ansible_all_ipv4_addresses | ipaddr(consul_advertise_addr) | first %}
   "bind_addr": "{{ consul_addr }}",
   "advertise_addr": "{{ consul_addr }}",
-  "recursors": [ "8.8.8.8", "8.8.4.4" ],
 {% set consul_join=[] %}
 {% for h in groups['all'] %}
 {%   if consul_join.extend(hostvars[h]['ansible_all_ipv4_addresses']) %} {% endif %}
 {% endfor %}
   "retry_join": [ "{{ consul_join | ipaddr(consul_advertise_addr) | difference(consul_addr) | join('", "') }}" ],
-  "bootstrap_expect": 2
- }
+  "bootstrap_expect": 2,
+  "addresses": {
+    "https": "{{ consul_addr }}"
+  },
+  "ports": {
+    "http": 8500,
+    "https": 8500
+  },
+  "encrypt": "{{ consul_encrypt }}",
+  "ca_file": "{{ consul_home }}/secrets/miguelaco.crt",
+  "key_file": "{{ consul_home }}/secrets/server.dc1.consul.key.pem",
+  "cert_file": "{{ consul_home }}/secrets/server.dc1.consul.cert.pem",
+  "verify_outgoing": true,
+  "verify_server_hostname": true
+}

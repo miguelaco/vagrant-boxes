@@ -10,6 +10,7 @@
     consul_config_dir: /etc/consul.d
     consul_config_file: /etc/consul.json
     consul_advertise_addr: 192.168.77.21/24
+    consul_encrypt: 8PwI2n8UMRKmi7csQLKLkw==
 
     vault_version: 0.6.2
     vault_home: /opt/vault

@@ -21,6 +21,7 @@
     - "{{ consul_home }}/bin"
     - "{{ consul_home }}/cert"
     - "{{ consul_home }}/data"
+    - "{{ consul_home }}/secrets"
     - "{{ consul_config_dir }}"
 
 - name: Check consul package
@@ -52,6 +53,17 @@
     path={{ consul_log_dir }}/consul
     owner=consul
     group=consul
+
+- name: Copy consul certs
+  copy:
+    src: "{{ item }}"
+    dest: "{{ consul_home }}/secrets"
+  with_items:
+    - "miguelaco.crt"
+    - "server.dc1.consul.key.pem"
+    - "server.dc1.consul.cert.pem"
+  notify:
+    - Start consul service
 
 - name: Copy consul config file
   template:
