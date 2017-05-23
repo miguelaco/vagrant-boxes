@@ -23,6 +23,13 @@
     - "{{ vault_home }}/conf"
     - "{{ vault_home }}/conf/secrets"
 
+- name: Check vault package
+  local_action:
+    stat
+      path=vault/files/vault_{{vault_version}}_linux_amd64.zip
+  become: no
+  register: vault_package
+
 - name: Download vault package locally
   local_action:
     get_url
@@ -30,6 +37,9 @@
       dest=vault/files
       force=no
   become: no
+  when: not vault_package.stat.exists
+
+- package: name=unzip state=present
 
 - name: Copy vault package to hosts
   unarchive:
@@ -69,7 +79,13 @@
 - name: Set mlock capabilities for vault
   shell: setcap cap_ipc_lock=+ep {{ vault_home }}/bin/vault
 
-# 1. set PATH to invoke vault easily
+- name: Set vault env variables
+  template:
+    src=templates/vault.sh.j2
+    dest=/etc/profile.d/vault.sh
+    owner=vault
+    group=vault
+
 # 2. configure DNS resolution in nodes
 # 3. make vault listen in all interfaces
 

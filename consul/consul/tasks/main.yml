@@ -23,6 +23,13 @@
     - "{{ consul_home }}/data"
     - "{{ consul_config_dir }}"
 
+- name: Check consul package
+  local_action:
+    stat
+      path=consul/files/consul_{{ consul_version }}_linux_amd64.zip
+  become: no
+  register: consul_package
+
 - name: Download consul package locally
   local_action:
     get_url
@@ -30,8 +37,9 @@
       dest=consul/files
       force=no
   become: no
+  when: not consul_package.stat.exists
 
-- package: name=unzip state=installed
+- package: name=unzip state=present
 
 - name: Copy consul package to hosts
   unarchive:
@@ -64,3 +72,10 @@
     mode=0644
   notify:
     - Start consul service
+
+- name: Set consul env variables
+  template:
+    src=templates/consul.sh.j2
+    dest=/etc/profile.d/consul.sh
+    owner=consul
+    group=consul

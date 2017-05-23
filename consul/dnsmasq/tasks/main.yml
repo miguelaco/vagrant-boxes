@@ -1,0 +1,16 @@
+---
+
+- name: Install required packages
+  package: name={{ item }} state=present
+  with_items:
+    - resolvconf
+    - dnsmasq
+  notify: Start dnsmasq service
+
+- name: Setup consul as resolver for 'consul' domain
+  template:
+    src=templates/10-consul.j2
+    dest=/etc/dnsmasq.d/10-consul
+    owner=consul
+    group=consul
+  notify: Start dnsmasq service

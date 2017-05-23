@@ -1,0 +1,6 @@
+---
+
+- name: Start dnsmasq service
+  systemd:
+    name: dnsmasq
+    state: restarted
