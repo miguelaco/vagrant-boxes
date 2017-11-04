@@ -1,6 +1,5 @@
 [test_group]
-test1
-test2
+ldap
 
 [test_group:vars]
 ldap_package = slapd
