@@ -1,0 +1,9 @@
+dn: cn=config
+add: olcTLSCACertificateFile
+olcTLSCACertificateFile: /etc/ssl/certs/miguelaco.crt
+-
+add: olcTLSCertificateFile
+olcTLSCertificateFile: /etc/ssl/certs/ldap.miguelaco.com.cert.pem
+-
+add: olcTLSCertificateKeyFile
+olcTLSCertificateKeyFile: /etc/ssl/private/ldap.miguelaco.com.key.pem

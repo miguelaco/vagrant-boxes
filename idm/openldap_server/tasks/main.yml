@@ -4,22 +4,17 @@
   apt: name={{ item }} state=installed
   with_items: "{{ openldap_server_pkgs }}"
 
-- name: Setup olcSuffix
-  ldap_attr:
-    dn: olcDatabase={1}mdb,cn=config
-    name: olcSuffix
-    values: "{{ suffix }}"
-    state: exact
+- name: Add openldap user to ssl-cert group
+  shell: usermod -a -G ssl-cert openldap
 
-- name: Setup olcRootDN
-  ldap_attr:
-    dn: olcDatabase={1}mdb,cn=config
-    name: olcRootDN
-    values: "{{ rootDN }}"
-    state: exact
+- name: Create tmp dir for our stuff
+  file:
+    path: /tmp/ldap
+    state: directory
 
 - name: Generate the root password
   shell: slappasswd -s {{ rootPW }} 
+<<<<<<< HEAD
   register: rootPW_hash
 
 - name: Setup olcRootPW
@@ -56,3 +51,52 @@
     name: olcTLSCertificateFile
     values: "/etc/ssl/certs/server-cert.pem"
     state: exact
+=======
+  register: slappasswd_out
+
+- name: Set rootPW_hash fact
+  set_fact: rootPW_hash={{ slappasswd_out.stdout }}
+
+- name: Copy certs
+  copy:
+    src: "{{ item }}"
+    dest: "/etc/ssl/certs"
+    group: openldap
+  with_items:
+    - "miguelaco.crt"
+    - "ldap.miguelaco.com.cert.pem"
+
+- name: Copy key
+  copy:
+    src: "{{ item }}"
+    dest: "/etc/ssl/private"
+    group: openldap
+    mode: 0640
+  with_items:
+    - "ldap.miguelaco.com.key.pem"
+
+- name: Copy setup ldif
+  template:
+    src: setup.j2.ldif
+    dest: /tmp/ldap/setup.ldif
+
+- name: Setup openldap
+  shell: "ldapmodify -Y EXTERNAL -H ldapi:/// -f '/tmp/ldap/setup.ldif'"
+
+- name: Copy tls ldif
+  template:
+    src: tls.j2.ldif
+    dest: /tmp/ldap/tls.ldif
+
+- name: Setup TLS
+  shell: "ldapmodify -Y EXTERNAL -H ldapi:/// -f '/tmp/ldap/tls.ldif'"
+  
+- name: Copy base ldif
+  template:
+    src: base.j2.ldif
+    dest: /tmp/ldap/base.ldif
+
+- name: Setup base DN
+  shell: "ldapadd -x -D {{ rootDN }} -w '{{ rootPW }}' -f '/tmp/ldap/base.ldif'"
+
+>>>>>>> d5b28d66da9d447164e6d3421ca2146d21362981
