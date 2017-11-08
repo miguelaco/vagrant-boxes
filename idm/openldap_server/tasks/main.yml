@@ -35,3 +35,24 @@
     bind_pw: "{{ rootPW }}"
     dn: "{{ suffix }}"
     objectClass: domain
+
+- name: Setup olcTLSCACertificateFile
+  ldap_attr:
+    dn: cn=config
+    name: olcTLSCACertificateFile
+    values: "/etc/ssl/certs/server-intermediate.pem"
+    state: exact
+
+- name: Setup olcTLSCertificateKeyFile
+  ldap_attr:
+    dn: cn=config
+    name: olcTLSCertificateKeyFile
+    values: "/etc/ssl/private/server-key.pem"
+    state: exact
+
+- name: Setup olcTLSCertificateFile
+  ldap_attr:
+    dn: cn=config
+    name: olcTLSCertificateFile
+    values: "/etc/ssl/certs/server-cert.pem"
+    state: exact
