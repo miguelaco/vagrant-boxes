@@ -34,3 +34,5 @@
   with_items:
     - { name: root, path: ca }
     - { name: intermediate, path: ca/intermediate }
+
+- template: src=server_cert_exts.cnf.j2 dest=/root/ca/intermediate/server_cert_exts.cnf
