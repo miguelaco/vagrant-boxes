@@ -1,0 +1,98 @@
+---
+
+### INSTALL ETCDv3 ###
+#- debug: var=hostvars['sd-1']
+
+- name: Ensure etcd group existance
+  group:
+    name: etcd
+    state: present
+
+- name: Ensure etcd user existance
+  user:
+     name: etcd
+     group: etcd
+     comment: "etcd is a distributed, consistent key-value store for shared configuration and service discovery"
+     shell: /sbin/nologin
+     home: "{{ etcd_home_dir }}"
+     createhome: no
+     state: present
+
+- name: Ensure etcd dirs
+  file:
+    path: "{{ etcd_home_dir }}"
+    owner: etcd
+    group: etcd
+    mode: 0770
+    state: directory
+  with_items:
+    - "{{ etcd_home_dir }}"
+    - "{{ etcd_data_dir }}"
+    - "{{ etcd_conf_dir }}"
+    - "{{ etcd_secrets_dir }}"
+    - "{{ etcd_bin_dir }}"
+
+- name: Ensure etcd link /etc/etcd
+  file:
+    path: /etc/etcd
+    src: "{{ etcd_conf_dir }}"
+    owner: etcd
+    group: etcd
+    state: link
+
+- name: Unpack {{ etcd_version }} to {{ etcd_install_dir }}
+  unarchive:
+    src: "{{etcd_version}}.tar.gz"
+    dest: "{{ etcd_install_dir }}"
+    owner: etcd
+    group: etcd
+    mode: 0770
+    exclude:
+      - Documentation/
+      - README-etcdctl.md
+      - README.md
+      - READMEv2-etcdctl.md
+
+### CONFIGURE ETCDv3 ###
+
+- block:
+  - name: Register etcd cluster membership
+    stat:
+      path: "{{ etcd_data_dir }}/member"
+    register: etcd_conf_file
+
+  - name: Ensure "{{etcd_version}}" systemd unit
+    template:
+       src: etcd-systemd.j2
+       dest: "/etc/systemd/system/etcd.service"
+       owner: root
+       group: root
+       mode: 0644
+    tags: [etcd]
+
+  - name: Ensure "{{etcd_version}}" configuration file
+    template:
+       src: etcd-master.j2
+       dest: "{{etcd_conf_dir}}/etcd.conf"
+       owner: etcd
+       group: etcd
+       mode: 0600
+    notify: Restart etcd daemon
+    tags: [etcd]
+
+  - name: Copy certs
+    copy:
+      src: "{{ item }}"
+      dest: "{{ etcd_secrets_dir }}"
+      owner: etcd
+      group: etcd
+      mode: 0600
+    with_items:
+      - "ca.crt"
+      - "{{ inventory_hostname }}.miguelaco.com.key.pem"
+      - "{{ inventory_hostname }}.miguelaco.com.cert.pem"
+    notify: Restart etcd daemon
+
+- always:
+  - name: Configured etcdv3, flushing handlers ...
+    meta: flush_handlers

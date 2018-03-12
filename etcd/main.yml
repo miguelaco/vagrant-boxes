@@ -1,0 +1,22 @@
+---
+- hosts: all
+  become: yes
+
+  vars:
+    etcd_version: etcd-v3.2.11-linux-amd64
+    etcd_home_dir: /opt/etcd
+    etcd_data_dir: /var/etcd
+    etcd_bin_dir: "{{ etcd_home_dir }}/bin"
+    etcd_conf_dir: "{{ etcd_home_dir }}/conf"
+    etcd_secrets_dir: "{{ etcd_home_dir }}/ssl"
+
+  pre_tasks:
+    - name: Add IP address of all hosts to all hosts
+      lineinfile:
+        dest: /etc/hosts
+        line: "{{ hostvars[item].ansible_eth1.ipv4.address }} {{ hostvars[item].inventory_hostname }}.miguelaco.com"
+        state: present
+      with_items: "{{ groups.all }}"
+
+  roles:
+    - { role: etcd, become: yes }

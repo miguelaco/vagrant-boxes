@@ -1,0 +1,20 @@
+[Unit]
+Description=etcd is a distributed, consistent key-value store for shared configuration and service discovery
+Documentation=https://github.com/coreos/etcd
+
+[Service]
+Type=notify
+Restart=always
+RestartSec=5s
+LimitNOFILE=40000
+TimeoutStartSec=0
+TimeoutSec=300
+SyslogIdentifier=etcd
+User=etcd
+Group=etcd
+EnvironmentFile={{ etcd_conf_dir }}/etcd.conf
+
+ExecStart={{ etcd_home_dir }}/etcd
+
+[Install]
+WantedBy=multi-user.target
