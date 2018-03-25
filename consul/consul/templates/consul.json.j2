@@ -1,21 +1,17 @@
+{% set consul_addr = hostvars[inventory_hostname]['ansible_'~consul_advertise_iface]['ipv4']['address'] %}
+{% set consul_join_addrs = groups['all'] | map('extract', hostvars, ['ansible_'~consul_advertise_iface, 'ipv4', 'address']) | list %}
 {
   "server": {{ "true" if consul_is_server else "false"}},
   "domain": "consul.",
   "data_dir": "{{ consul_home }}/data",
-{% set consul_addr = ansible_all_ipv4_addresses | ipaddr(consul_advertise_addr) | first %}
   "bind_addr": "{{ consul_addr }}",
   "advertise_addr": "{{ consul_addr }}",
-{% set consul_join=[] %}
-{% for h in groups['all'] %}
-{%   if consul_join.extend(hostvars[h]['ansible_all_ipv4_addresses']) %} {% endif %}
-{% endfor %}
-  "retry_join": [ "{{ consul_join | ipaddr(consul_advertise_addr) | difference(consul_addr) | join('", "') }}" ],
-  "bootstrap_expect": 2,
+  "retry_join": [ "{{ consul_join_addrs | difference(consul_addr) | join('", "') }}" ],
+  "bootstrap_expect": {{ consul_join_addrs | length }},
   "addresses": {
     "https": "{{ consul_addr }}"
   },
   "ports": {
-    "http": 8500,
     "https": 8500
   },
   "encrypt": "{{ consul_encrypt }}",
@@ -27,6 +23,6 @@
   "acl_datacenter": "dc1",
   "acl_default_policy": "deny",
   "acl_down_policy": "deny",
-  "acl_master_token": "4a381b17-b693-4f8c-8cab-5fec1848a730",
-  "acl_agent_token": "e721f4dc-9cdd-9331-2a3e-57cf3ac74f5f"
+  "acl_master_token": "{{ consul_acl_master_token }}",
+  "acl_agent_token": "{{ consul_acl_agent_token }}"
 }

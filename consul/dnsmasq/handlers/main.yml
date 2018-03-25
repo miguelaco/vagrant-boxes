@@ -1,6 +1,13 @@
 ---
 
-- name: Start dnsmasq service
+- name: Disable dnsmasq service
   systemd:
     name: dnsmasq
+    state: stopped
+    enabled: no
+    masked: yes
+
+- name: Start NetworkManager service
+  systemd:
+    name: NetworkManager
     state: restarted
