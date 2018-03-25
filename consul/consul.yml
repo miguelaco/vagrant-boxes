@@ -7,7 +7,7 @@
     consul_log_dir: /var/log
     consul_config_dir: /etc/consul.d
     consul_config_file: /etc/consul.json
-    consul_advertise_iface: eth1
+    consul_advertise_addrs: ["192.168.77.21", "192.168.77.22"]
     consul_encrypt: 8PwI2n8UMRKmi7csQLKLkw==
     consul_acl_master_token: 4a381b17-b693-4f8c-8cab-5fec1848a730
     consul_acl_agent_token: e721f4dc-9cdd-9331-2a3e-57cf3ac74f5f
@@ -15,6 +15,10 @@
     vault_version: 0.6.2
     vault_home: /opt/vault
     vault_advertise_addr: 192.168.77.21/24
+
+  pre_tasks:
+    - debug: msg=consul_advertise_addr={{ consul_advertise_addrs | intersect(ansible_all_ipv4_addresses) }}
+    - debug: msg=consul_join_addrs={{ consul_advertise_addrs | difference(ansible_all_ipv4_addresses) }}
 
   roles:
     - { role: consul, become: yes }
