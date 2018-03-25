@@ -7,7 +7,7 @@
   "bind_addr": "{{ consul_advertise_addr }}",
   "advertise_addr": "{{ consul_advertise_addr }}",
   "retry_join": [ "{{ consul_join_addrs | join('", "') }}" ],
-  "bootstrap_expect": {{ consul_join_addrs | length }},
+  "bootstrap_expect": {{ consul_advertise_addrs | length }},
   "addresses": {
     "https": "{{ consul_advertise_addr }}"
   },
