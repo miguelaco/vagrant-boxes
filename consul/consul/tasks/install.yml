@@ -104,5 +104,4 @@
       group=consul
 
 - always:
-  - name: Flushing handlers
-    meta: flush_handlers
+  - meta: flush_handlers

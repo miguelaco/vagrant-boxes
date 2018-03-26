@@ -1,0 +1,60 @@
+---
+
+- name: Check vault init status
+  uri:
+    url: https://{{ inventory_hostname }}.node.consul:8200/v1/sys/init
+    return_content: yes
+    validate_certs: no
+  register: init_status
+  run_once: true
+
+- block:
+  - name: Init vault
+    uri:
+      url: https://{{ inventory_hostname }}.node.consul:8200/v1/sys/init
+      method: PUT
+      return_content: yes
+      validate_certs: no
+      body_format: json
+      body:
+        secret_shares: 5
+        secret_threshold: 3
+    register: init_response
+    run_once: true
+
+  - name: Save vault init data
+    local_action:
+      copy
+        content={{ init_response.json }}
+        dest=vault/files/vault_init_data
+    become: no
+    run_once: yes
+  when: not init_status.json.initialized
+
+- name: Check vault sealed status
+  uri:
+    url: https://{{ inventory_hostname }}.node.consul:8200/v1/sys/seal-status
+    return_content: yes
+    validate_certs: no
+  register: seal_status
+
+- block:
+  - name: Lookup vault init data
+    set_fact:
+      vault_init_data: "{{ lookup('file', 'vault/files/vault_init_data') }}"
+
+  - name: Unseal vault
+    uri:
+      url: https://{{ inventory_hostname }}.node.consul:8200/v1/sys/unseal
+      method: PUT
+      return_content: yes
+      validate_certs: no
+      body_format: json
+      body:
+        key: "{{ item }}"
+    register: unseal
+    with_items:
+      - "{{ vault_init_data['keys'] | shuffle }}"
+    when:
+      - unseal is not defined or unseal.json.sealed
+  when: seal_status.json.sealed
