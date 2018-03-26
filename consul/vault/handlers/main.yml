@@ -8,4 +8,4 @@
     daemon-reload: yes
 
 - name: Update CA certificates
-  command: update-ca-certificates
+  command: update-ca-trust extract

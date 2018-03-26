@@ -63,15 +63,15 @@
       src: "{{ item }}"
       dest: "{{ consul_home }}/secrets"
     with_items:
-      - miguelaco.crt
-      - server.dc1.consul.key.pem
-      - server.dc1.consul.cert.pem
+      - ca.crt
+      - server.key.pem
+      - server.cert.pem
     notify:
       - Start consul service
 
   - name: Install CA
     copy:
-      src: files/miguelaco.crt
+      src: files/ca.crt
       dest: /etc/pki/ca-trust/source/anchors
     notify:
       - Update CA certificates

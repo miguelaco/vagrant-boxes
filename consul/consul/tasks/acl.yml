@@ -7,7 +7,7 @@
   until: result.status == 200 and result.json
   run_once: true
 
-- name: Agent ACL created
+- name: Agent ACL updated
   uri:
     url: http://{{ ansible_host }}:8500/v1/acl/update
     method: PUT

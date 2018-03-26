@@ -15,9 +15,9 @@
     "https": 8500
   },
   "encrypt": "{{ consul_encrypt }}",
-  "ca_file": "{{ consul_home }}/secrets/miguelaco.crt",
-  "key_file": "{{ consul_home }}/secrets/server.dc1.consul.key.pem",
-  "cert_file": "{{ consul_home }}/secrets/server.dc1.consul.cert.pem",
+  "ca_file": "{{ consul_home }}/secrets/ca.crt",
+  "key_file": "{{ consul_home }}/secrets/server.key.pem",
+  "cert_file": "{{ consul_home }}/secrets/server.cert.pem",
   "verify_outgoing": true,
   "verify_server_hostname": true,
   "acl_datacenter": "dc1",

@@ -45,12 +45,12 @@
   unarchive:
     src=files/vault_{{ vault_version }}_linux_amd64.zip
     dest={{ vault_home }}/bin
-
-### CONFIGURE VAULT ###
+  notify:
+    - Start vault service
 
 - name: Install CA
   copy:
-    src: "files/miguelaco.crt"
+    src: "files/ca.crt"
     dest: "/usr/local/share/ca-certificates"
   notify:
     - Update CA certificates
@@ -60,8 +60,10 @@
     src: "{{ item }}"
     dest: "{{ vault_home }}/conf/secrets"
   with_items:
-    - "vault.service.consul.key.pem"
-    - "vault.service.consul.cert.pem"
+    - "server.key.pem"
+    - "server.cert.pem"
+  notify:
+    - Start vault service
 
 - name: Copy vault config file
   template:
@@ -85,6 +87,28 @@
     dest=/etc/profile.d/vault.sh
     owner=vault
     group=vault
+
+- name: Wait for leader election
+  uri:
+    url: http://{{ ansible_host }}:8500/v1/status/leader
+  register: result
+  until: result.status == 200 and result.json
+  run_once: true
+
+- name: Vault ACL updated in consul
+  uri:
+    url: http://{{ ansible_host }}:8500/v1/acl/update
+    method: PUT
+    headers:
+      X-Consul-Token: "{{ consul_acl_master_token }}"
+    body_format: json
+    body:
+      Id: "{{ consul_acl_vault_token }}"
+      Name: Vault token
+      Type: client
+      Rules: "key \"vault/\" { policy = \"write\" } node \"\" { policy = \"write\" } service \"vault\" { policy = \"write\" } agent \"\" { policy = \"write\" } session \"\" { policy = \"write\" }"
+
+  run_once: true
 
 # 2. configure DNS resolution in nodes
 # 3. make vault listen in all interfaces
