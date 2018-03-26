@@ -3,14 +3,28 @@
 - name: Install required packages
   package: name={{ item }} state=present
   with_items:
-    - resolvconf
+    - NetworkManager
     - dnsmasq
-  notify: Start dnsmasq service
+  notify:
+    - Disable dnsmasq service
+    - Start NetworkManager service
+
+- name: Configure NetworkManager to use dnsmasq
+  copy:
+    content: |
+      [main]
+      dns=dnsmasq
+    dest: /etc/NetworkManager/conf.d/dnsmasq.conf
+  notify:
+    - Disable dnsmasq service
+    - Start NetworkManager service
 
 - name: Setup consul as resolver for 'consul' domain
-  template:
-    src=templates/10-consul.j2
-    dest=/etc/dnsmasq.d/10-consul
-    owner=consul
-    group=consul
-  notify: Start dnsmasq service
+  copy:
+    content: |
+      # Enable forward lookup of the 'consul' domain:
+      server=/consul/127.0.0.1#8600
+    dest: /etc/NetworkManager/dnsmasq.d/10-consul
+  notify:
+    - Disable dnsmasq service
+    - Start NetworkManager service

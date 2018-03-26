@@ -1,22 +1,23 @@
 ---
 - hosts: all
-
   vars:
-    
-    consul_version: 0.8.2
+    consul_version: 1.0.6
     consul_is_server: true
     consul_home: /opt/consul
     consul_log_dir: /var/log
     consul_config_dir: /etc/consul.d
     consul_config_file: /etc/consul.json
-    consul_advertise_addr: 192.168.77.21/24
+    consul_advertise_addrs: ["192.168.77.21", "192.168.77.22"]
     consul_encrypt: 8PwI2n8UMRKmi7csQLKLkw==
+    consul_acl_master_token: 4a381b17-b693-4f8c-8cab-5fec1848a730
+    consul_acl_agent_token: e721f4dc-9cdd-9331-2a3e-57cf3ac74f5f
+    consul_acl_vault_token: 21d69103-2f32-acba-a3cd-f15c2b928f81
 
-    vault_version: 0.6.2
+    vault_version: 0.9.6
     vault_home: /opt/vault
     vault_advertise_addr: 192.168.77.21/24
 
   roles:
-     - { role: consul, become: yes }
-     - { role: dnsmasq, become: yes }
-     - { role: vault, become: yes }
+    - { role: consul, become: yes }
+    - { role: dnsmasq, become: yes }
+    - { role: vault, become: yes }

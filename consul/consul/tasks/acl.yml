@@ -1,0 +1,36 @@
+---
+
+- name: Wait for leader election
+  uri:
+    url: http://{{ ansible_host }}:8500/v1/status/leader
+  register: result
+  until: result.status == 200 and result.json
+  run_once: true
+
+- name: Agent ACL updated
+  uri:
+    url: http://{{ ansible_host }}:8500/v1/acl/update
+    method: PUT
+    headers:
+      X-Consul-Token: "{{ consul_acl_master_token }}"
+    body_format: json
+    body:
+      Id: "{{ consul_acl_agent_token }}"
+      Name: Agent token
+      Type: client
+      Rules: "node \"\" { policy = \"write\" } service \"\" { policy = \"read\" }"
+  run_once: true
+
+- name: Anonymous ACL updated
+  uri:
+    url: http://{{ ansible_host }}:8500/v1/acl/update
+    method: PUT
+    headers:
+      X-Consul-Token: "{{ consul_acl_master_token }}"
+    body_format: json
+    body:
+      Id: anonymous
+      Name: Anonymous Token
+      Type: client
+      Rules: "node \"\" { policy = \"read\" } service \"\" { policy = \"read\" }"
+  run_once: true
