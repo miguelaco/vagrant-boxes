@@ -3,7 +3,6 @@
 - name: Check vault init status
   uri:
     url: https://{{ inventory_hostname }}.node.consul:8200/v1/sys/init
-    return_content: yes
     validate_certs: no
   register: init_status
   run_once: true
@@ -13,13 +12,13 @@
     uri:
       url: https://{{ inventory_hostname }}.node.consul:8200/v1/sys/init
       method: PUT
-      return_content: yes
       validate_certs: no
       body_format: json
       body:
         secret_shares: 5
         secret_threshold: 3
     register: init_response
+    no_log: yes
     run_once: true
 
   - name: Save vault init data
@@ -34,7 +33,6 @@
 - name: Check vault sealed status
   uri:
     url: https://{{ inventory_hostname }}.node.consul:8200/v1/sys/seal-status
-    return_content: yes
     validate_certs: no
   register: seal_status
 
@@ -42,19 +40,26 @@
   - name: Lookup vault init data
     set_fact:
       vault_init_data: "{{ lookup('file', 'vault/files/vault_init_data') }}"
+    no_log: yes
 
   - name: Unseal vault
     uri:
       url: https://{{ inventory_hostname }}.node.consul:8200/v1/sys/unseal
       method: PUT
-      return_content: yes
       validate_certs: no
       body_format: json
       body:
         key: "{{ item }}"
     register: unseal
+    no_log: yes
     with_items:
       - "{{ vault_init_data['keys'] | shuffle }}"
-    when:
-      - unseal is not defined or unseal.json.sealed
+    when: unseal is not defined or unseal.json.sealed
+
+  - name: Check vault sealed status
+    uri:
+      url: https://{{ inventory_hostname }}.node.consul:8200/v1/sys/seal-status
+      validate_certs: no
+    register: seal_status
+    failed_when: seal_status.json.sealed
   when: seal_status.json.sealed
