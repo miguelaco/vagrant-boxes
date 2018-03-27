@@ -52,7 +52,7 @@
   - name: Install CA
     copy:
       src: "files/ca.crt"
-      dest: "/usr/local/share/ca-certificates"
+      dest: "/etc/pki/ca-trust/source/anchors"
     notify:
       - Update CA certificates
 

@@ -36,12 +36,12 @@
     validate_certs: no
   register: seal_status
 
-- block:
-  - name: Lookup vault init data
-    set_fact:
-      vault_init_data: "{{ lookup('file', 'vault/files/vault_init_data') }}"
-    no_log: yes
+- name: Lookup vault init data
+  set_fact:
+    vault_init_data: "{{ lookup('file', 'vault/files/vault_init_data') }}"
+  no_log: yes
 
+- block:
   - name: Unseal vault
     uri:
       url: https://{{ inventory_hostname }}.node.consul:8200/v1/sys/unseal
