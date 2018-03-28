@@ -11,7 +11,7 @@
     validate_certs: no
     status_code: 200, 429, 500, 501, 503
   register: init_status
-  until: result.status == 200 and result.json
+  until: init_status.status == 200 and init_status.json
   run_once: true
 
 - block:
@@ -32,7 +32,7 @@
     local_action:
       copy
         content={{ init_response.json }}
-        dest=vault_init_data
+        dest=./vault_init_data
     become: no
     run_once: yes
   when: not init_status.json.initialized
@@ -42,6 +42,7 @@
     url: https://{{ inventory_hostname }}.node.consul:8200/v1/sys/seal-status
     validate_certs: no
   register: seal_status
+  when: init_status.json.initialized
 
 - name: Lookup vault init data
   set_fact:
@@ -49,6 +50,9 @@
   no_log: yes
 
 - block:
+  - set_fact:
+      unseal: false
+
   - name: Unseal vault
     uri:
       url: https://{{ inventory_hostname }}.node.consul:8200/v1/sys/unseal
@@ -61,7 +65,7 @@
     no_log: yes
     with_items:
       - "{{ vault_init_data['keys'] | shuffle }}"
-    when: unseal is not defined or unseal.json.sealed
+    when: not unseal or unseal.json.sealed
 
   - name: Check vault sealed status
     uri:
@@ -69,4 +73,13 @@
       validate_certs: no
     register: seal_status
     failed_when: seal_status.json.sealed
-  when: seal_status.json.sealed
+  when: not init_status.json.initialized or seal_status.json.sealed
+
+- name: Check mounts
+  uri:
+    url: https://vault.service.consul:8200/v1/sys/mounts
+    headers:
+      X-Vault-Token: "{{ vault_init_data.root_token }}"  
+  register: result
+  until: result.status == 200 and result.json
+  run_once: true

@@ -18,7 +18,8 @@
     vault_advertise_addr: 192.168.77.21/24
 
   roles:
-    - { role: consul, become: yes }
-    - { role: dnsmasq, become: yes }
-    - { role: vault, become: yes }
-    - { role: tls, become: yes }
+    - { role: common, become: yes, tags: [ 'common' ] }
+    - { role: consul, become: yes, tags: [ 'consul' ] }
+    - { role: dnsmasq, become: yes, tags: [ 'dnsmasq' ] }
+    - { role: vault, become: yes, tags: [ 'vault' ] }
+    - { role: tls, become: yes, tags: [ 'tls' ] }

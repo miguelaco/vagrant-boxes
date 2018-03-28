@@ -1,5 +1,12 @@
 ---
 
+- name: Start vault service
+  systemd:
+    name: vault
+    state: restarted
+    enabled: yes
+    daemon-reload: yes
+
 - name: Start consul service
   systemd:
     name: consul

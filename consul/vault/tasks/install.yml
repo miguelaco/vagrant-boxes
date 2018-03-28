@@ -114,34 +114,8 @@
 - always:
   - meta: flush_handlers
 
-# 2. configure DNS resolution in nodes
-# 3. make vault listen in all interfaces
-
-### CONFIGURE VAULT SECRETS ###
-
-#- name: Move vault crt
-#  copy:
-#    src: vault.crt
-#    dest: "{{secrets_dir}}/{{ vault_crt }}"
-#  when: configure
-#  tags: [vault, move_vault_crt]
-
-#- name: Move vault key
-#  copy:
-#    src: vault.key
-#    dest: "{{secrets_dir}}/{{ vault_key }}"
-#  when: configure
-#  tags: [vault, move_vault_key]
-
-#- name: Vault pass
-#  shell: java -cp {{ vault_zk_dir }}/zookeeper-{{zookeeper_version}}.jar:{{ vault_zk_dir }}/lib/log4j-1.2.16.jar:{{ vault_zk_dir }}/lib/slf4j-log4j12-1.6.1.jar:{{ vault_zk_dir }}/lib/slf4j-api-1.6.1.jar  org.apache.zookeeper.server.auth.DigestAuthenticationProvider "vault:{{vault_zk_pass}}"
-#  register: vault_pass_digest
-#  when: configure
-#  tags: [vault, vault_zk_pass]
-
-#- name: Vault hcl file with security
-#  template:
-#    src: vault.security.hcl.j2
-#    dest: "{{ install_dir }}/vault-{{vault_version}}/conf/vault.hcl"
-#  when: configure
-#  tags: [vault, vault_hcl]
+- name: Init vault
+  include_role:
+    name: common
+    tasks_from: vault-init
+  tags: vault_init
