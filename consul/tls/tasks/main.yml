@@ -1,0 +1,8 @@
+---
+
+- name: Lookup vault init data
+  set_fact:
+    vault_init_data: "{{ lookup('file', 'vault_init_data') }}"
+  no_log: yes
+
+- { import_tasks: consul.yml, tags: [consul, tls] }

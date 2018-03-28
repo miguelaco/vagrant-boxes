@@ -1,0 +1,10 @@
+backend "consul" {
+    token = "21d69103-2f32-acba-a3cd-f15c2b928f81"
+}
+
+listener "tcp" {
+{% set vault_addr = ansible_all_ipv4_addresses | ipaddr(vault_advertise_addr) | first %}
+   address = "{{ vault_addr }}:8200"
+   tls_cert_file = "/opt/vault/conf/secrets/server.cert.pem"
+   tls_key_file  = "/opt/vault/conf/secrets/server.key.pem"
+}

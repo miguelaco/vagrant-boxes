@@ -1,0 +1,4 @@
+---
+
+- name: Update CA certificates
+  command: update-ca-trust extract

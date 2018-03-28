@@ -1,0 +1,28 @@
+{% set consul_advertise_addr = consul_advertise_addrs | intersect(ansible_all_ipv4_addresses) | first %}
+{% set consul_join_addrs = consul_advertise_addrs | difference(ansible_all_ipv4_addresses) %}
+{
+  "server": {{ "true" if consul_is_server else "false"}},
+  "domain": "consul.",
+  "data_dir": "{{ consul_home }}/data",
+  "bind_addr": "{{ consul_advertise_addr }}",
+  "advertise_addr": "{{ consul_advertise_addr }}",
+  "retry_join": [ "{{ consul_join_addrs | join('", "') }}" ],
+  "bootstrap_expect": {{ consul_advertise_addrs | length }},
+  "addresses": {
+    "https": "{{ consul_advertise_addr }}"
+  },
+  "ports": {
+    "https": 8500
+  },
+  "encrypt": "{{ consul_encrypt }}",
+  "ca_file": "{{ consul_home }}/secrets/ca.crt",
+  "key_file": "{{ consul_home }}/secrets/server.key.pem",
+  "cert_file": "{{ consul_home }}/secrets/server.cert.pem",
+  "verify_outgoing": true,
+  "verify_server_hostname": true,
+  "acl_datacenter": "dc1",
+  "acl_default_policy": "deny",
+  "acl_down_policy": "deny",
+  "acl_master_token": "{{ consul_acl_master_token }}",
+  "acl_agent_token": "{{ consul_acl_agent_token }}"
+}

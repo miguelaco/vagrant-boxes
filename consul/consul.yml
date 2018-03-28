@@ -21,3 +21,4 @@
     - { role: consul, become: yes }
     - { role: dnsmasq, become: yes }
     - { role: vault, become: yes }
+    - { role: tls, become: yes }

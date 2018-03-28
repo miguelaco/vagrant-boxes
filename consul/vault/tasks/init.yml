@@ -1,10 +1,17 @@
 ---
 
+- name: Ensure vault is started
+  systemd:
+    name: vault
+    state: started
+
 - name: Check vault init status
   uri:
     url: https://{{ inventory_hostname }}.node.consul:8200/v1/sys/init
     validate_certs: no
+    status_code: 200, 429, 500, 501, 503
   register: init_status
+  until: result.status == 200 and result.json
   run_once: true
 
 - block:
@@ -25,7 +32,7 @@
     local_action:
       copy
         content={{ init_response.json }}
-        dest=vault/files/vault_init_data
+        dest=vault_init_data
     become: no
     run_once: yes
   when: not init_status.json.initialized
@@ -38,7 +45,7 @@
 
 - name: Lookup vault init data
   set_fact:
-    vault_init_data: "{{ lookup('file', 'vault/files/vault_init_data') }}"
+    vault_init_data: "{{ lookup('file', 'vault_init_data') }}"
   no_log: yes
 
 - block:

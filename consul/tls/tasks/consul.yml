@@ -1,0 +1,42 @@
+---
+
+# curl -XPOST -H "X-Vault-Token: fc6620f7-41a8-cdbb-030e-6a9deb70d819" https://vault.service.consul:8200/v1/pki/roles/consul -d '{"allowed_domains": ["consul"], "allow_subdomains": true}'
+- name: Create consul role
+  uri:
+    url: https://vault.service.consul:8200/v1/pki/roles/consul
+    method: POST
+    status_code: 200, 204
+    headers:
+      X-Vault-Token: "{{ vault_init_data.root_token }}"
+    body_format: json
+    body:
+      allowed_domains:
+        - consul
+      allow_subdomains: true
+  run_once: true
+
+# curl -XPOST -H "X-Vault-Token: fc6620f7-41a8-cdbb-030e-6a9deb70d819" https://vault.service.consul:8200/v1/pki/issue/consul -d '{"common_name": "vault.service.consul", "alt_names": "active.vault.service.consul, standby.vault.service.consul, *.node.consul"}'
+- name: Create consul cert
+  uri:
+    url: https://vault.service.consul:8200/v1/pki/issue/consul
+    method: POST
+    status_code: 200, 204
+    headers:
+      X-Vault-Token: "{{ vault_init_data.root_token }}"
+    body_format: json
+    body:
+      common_name: consul.service.consul
+      alt_names: "*.node.consul, *.node.dc1.consul, server.dc1.consul"
+  register: cert
+  run_once: true
+
+- name: Copy consul cert
+  copy:
+    content: "{{ item.content }}"
+    dest: "{{ item.dest }}"
+  with_items:
+    - { dest: "{{ consul_home }}/secrets/ca.crt", content: "{{ cert.json.data.ca_chain | last }}" }
+    - { dest: "{{ consul_home }}/secrets/server.cert.pem", content: "{{ ([cert.json.data.certificate] + cert.json.data.ca_chain) | join('\n') }}" }
+    - { dest: "{{ consul_home }}/secrets/server.key.pem", content: "{{ cert.json.data.private_key }}" }
+  notify:
+    - Start consul service
