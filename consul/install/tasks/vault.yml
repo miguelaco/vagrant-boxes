@@ -20,9 +20,7 @@
     with_items:
       - "{{ vault_home }}"
       - "{{ vault_home }}/bin"
-      - "{{ vault_home }}/log"
       - "{{ vault_home }}/conf"
-      - "{{ vault_home }}/conf/secrets"
 
   - name: Check vault package
     local_action:
@@ -35,7 +33,7 @@
     local_action:
       get_url
         url=https://releases.hashicorp.com/vault/{{vault_version}}/vault_{{vault_version}}_linux_amd64.zip
-        dest=vault/files
+        dest=install/files
         force=no
     become: no
     when: not vault_package.stat.exists
@@ -49,23 +47,6 @@
     notify:
       - Start vault service
 
-  - name: Install CA
-    copy:
-      src: "files/ca.crt"
-      dest: "/etc/pki/ca-trust/source/anchors"
-    notify:
-      - Update CA certificates
-
-  - name: Copy vault certs
-    copy:
-      src: "{{ item }}"
-      dest: "{{ vault_home }}/conf/secrets"
-    with_items:
-      - "server.key.pem"
-      - "server.cert.pem"
-    notify:
-      - Start vault service
-
   - name: Copy vault config file
     template:
       src={{ item.src }}
@@ -74,8 +55,8 @@
       group=vault
       mode={{ item.mode }}
     with_items:
-      - { src: "config.hcl.j2", dest: "{{ vault_home }}/conf/config.hcl", mode: "0600" }
-      - { src: "vault-systemd.j2", dest: "/etc/systemd/system/vault.service", mode: "0644" }
+      - { src: "vault.hcl.j2", dest: "{{ vault_config_file }}", mode: "0600" }
+      - { src: "vault.systemd.j2", dest: "/etc/systemd/system/vault.service", mode: "0644" }
     notify:
       - Start vault service
 
@@ -88,13 +69,6 @@
       dest=/etc/profile.d/vault.sh
       owner=vault
       group=vault
-
-  - name: Wait for leader election
-    uri:
-      url: http://{{ ansible_host }}:8500/v1/status/leader
-    register: result
-    until: result.status == 200 and result.json
-    run_once: true
 
   - name: Vault ACL updated in consul
     uri:
@@ -115,7 +89,6 @@
   - meta: flush_handlers
 
 - name: Init vault
-  include_role:
-    name: common
-    tasks_from: vault-init
-  tags: vault_init
+  import_tasks: vault_init.yml
+  vars:
+    tls_enable: false

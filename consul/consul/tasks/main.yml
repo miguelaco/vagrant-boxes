@@ -1,3 +1,0 @@
----
-- { import_tasks: install.yml, tags: [consul_install] }
-- { import_tasks: acl.yml, tags: [consul_install] }

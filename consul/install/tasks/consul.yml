@@ -20,9 +20,7 @@
     with_items:
       - "{{ consul_home }}"
       - "{{ consul_home }}/bin"
-      - "{{ consul_home }}/cert"
       - "{{ consul_home }}/data"
-      - "{{ consul_home }}/secrets"
       - "{{ consul_config_dir }}"
 
   - name: Check consul package
@@ -36,7 +34,7 @@
     local_action:
       get_url
         url=https://releases.hashicorp.com/consul/{{ consul_version }}/consul_{{ consul_version }}_linux_amd64.zip
-        dest=consul/files
+        dest=install/files
         force=no
     become: no
     run_once: yes
@@ -51,48 +49,16 @@
     notify:
       - Start consul service
 
-  - name: Touch the log file
-    file:
-      state=touch
-      path={{ consul_log_dir }}/consul
-      owner=consul
-      group=consul
-
-  - name: Copy consul certs
-    copy:
-      src: "{{ item }}"
-      dest: "{{ consul_home }}/secrets"
-    with_items:
-      - ca.crt
-      - server.key.pem
-      - server.cert.pem
-    notify:
-      - Start consul service
-
-  - name: Install CA
-    copy:
-      src: files/ca.crt
-      dest: /etc/pki/ca-trust/source/anchors
-    notify:
-      - Update CA certificates
-
   - name: Copy consul config file
     template:
-      src=templates/consul.json.j2
-      dest={{ consul_config_file }}
+      src={{ item.src }}
+      dest={{ item.dest }}
       owner=consul
       group=consul
-      mode=0755
-    notify:
-      - Start consul service
-
-  - name: Copy consul systemd script
-    template:
-      src=templates/consul.systemd.j2
-      dest=/etc/systemd/system/consul.service
-      owner=root
-      group=root
-      mode=0644
+      mode={{ item.mode }}
+    with_items:
+      - { src: "consul.json.j2", dest: "{{ consul_config_file }}", mode: "0600" }
+      - { src: "consul.systemd.j2", dest: "/etc/systemd/system/consul.service", mode: "0644" }
     notify:
       - Start consul service
 
@@ -105,3 +71,31 @@
 
 - always:
   - meta: flush_handlers
+
+- name: Agent ACL updated
+  uri:
+    url: http://{{ ansible_host }}:8500/v1/acl/update
+    method: PUT
+    headers:
+      X-Consul-Token: "{{ consul_acl_master_token }}"
+    body_format: json
+    body:
+      Id: "{{ consul_acl_agent_token }}"
+      Name: Agent token
+      Type: client
+      Rules: "node \"\" { policy = \"write\" } service \"\" { policy = \"read\" }"
+  run_once: true
+
+- name: Anonymous ACL updated
+  uri:
+    url: http://{{ ansible_host }}:8500/v1/acl/update
+    method: PUT
+    headers:
+      X-Consul-Token: "{{ consul_acl_master_token }}"
+    body_format: json
+    body:
+      Id: anonymous
+      Name: Anonymous Token
+      Type: client
+      Rules: "node \"\" { policy = \"read\" } service \"\" { policy = \"read\" }"
+  run_once: true

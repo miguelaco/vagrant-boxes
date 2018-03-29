@@ -4,7 +4,6 @@
     consul_version: 1.0.6
     consul_is_server: true
     consul_home: /opt/consul
-    consul_log_dir: /var/log
     consul_config_dir: /etc/consul.d
     consul_config_file: /etc/consul.json
     consul_advertise_addrs: ["192.168.77.21", "192.168.77.22"]
@@ -15,11 +14,9 @@
 
     vault_version: 0.9.6
     vault_home: /opt/vault
+    vault_config_file: /etc/vault.hcl
     vault_advertise_addr: 192.168.77.21/24
 
   roles:
-    - { role: common, become: yes, tags: [ 'common' ] }
-    - { role: consul, become: yes, tags: [ 'consul' ] }
     - { role: dnsmasq, become: yes, tags: [ 'dnsmasq' ] }
-    - { role: vault, become: yes, tags: [ 'vault' ] }
-    - { role: tls, become: yes, tags: [ 'tls' ] }
+    - { role: install, become: yes, tags: [ 'install' ] }

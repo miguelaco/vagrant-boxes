@@ -5,6 +5,6 @@ backend "consul" {
 listener "tcp" {
 {% set vault_addr = ansible_all_ipv4_addresses | ipaddr(vault_advertise_addr) | first %}
    address = "{{ vault_addr }}:8200"
-   tls_cert_file = "/opt/vault/conf/secrets/server.cert.pem"
-   tls_key_file  = "/opt/vault/conf/secrets/server.key.pem"
+   tls_cert_file = "/opt/vault/secrets/server.cert.pem"
+   tls_key_file  = "/opt/vault/secrets/server.key.pem"
 }

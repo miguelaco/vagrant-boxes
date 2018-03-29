@@ -1,4 +1,0 @@
----
-
-- { import_tasks: install.yml, tags: [vault_install] }
-- { import_tasks: pki.yml, tags: [vault_pki] }

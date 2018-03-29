@@ -1,23 +1,29 @@
 ---
 
+- name: Lookup vault init data
+  set_fact:
+    vault_init_data: "{{ lookup('file', 'vault_init_data') }}"
+  no_log: yes
+  when: vault_init_data is not defined or vault_init_data.root_token is not defined
+
 - name: Check pki backend
   uri:
-    url: "https://vault.service.consul:8200/v1/sys/mounts"
+    url: "http://vault.service.consul:8200/v1/sys/mounts"
     method: GET
     validate_certs: no
     headers:
-      X-Vault-Token: "{{ vault_init_data.root_token }}"  
+      X-Vault-Token: "{{ vault_init_data.root_token }}"
   register: mounts
   run_once: true
 
 - name: Mount pki backend
   uri:
-    url: "https://vault.service.consul:8200/v1/sys/mounts/pki"
+    url: "http://vault.service.consul:8200/v1/sys/mounts/pki"
     method: POST
     validate_certs: no
     status_code: 200, 204
     headers:
-      X-Vault-Token: "{{ vault_init_data.root_token }}"  
+      X-Vault-Token: "{{ vault_init_data.root_token }}"
     body_format: json
     body:
       type: pki
@@ -26,7 +32,7 @@
 
 - name: Upload ca bundle
   uri:
-    url: "https://vault.service.consul:8200/v1/pki/config/ca"
+    url: "http://vault.service.consul:8200/v1/pki/config/ca"
     method: POST
     validate_certs: no
     status_code: 200, 204
@@ -34,5 +40,5 @@
       X-Vault-Token: "{{ vault_init_data.root_token }}"
     body_format: json
     body:
-      pem_bundle: "{{ lookup('file', 'vault/files/pki.pem') }}"
+      pem_bundle: "{{ lookup('file', 'install/files/pki.pem') }}"
   run_once: true

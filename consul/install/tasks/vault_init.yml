@@ -5,19 +5,24 @@
     name: vault
     state: started
 
+- name: Set http schema
+  set_fact:
+    schema: "{{ tls_enable | default(true) | ternary('https', 'http') }}"
+
 - name: Check vault init status
   uri:
-    url: https://{{ inventory_hostname }}.node.consul:8200/v1/sys/init
+    url: "{{ schema }}://{{ inventory_hostname }}.node.consul:8200/v1/sys/init"
     validate_certs: no
     status_code: 200, 429, 500, 501, 503
   register: init_status
   until: init_status.status == 200 and init_status.json
+  retries: 5
   run_once: true
 
 - block:
   - name: Init vault
     uri:
-      url: https://{{ inventory_hostname }}.node.consul:8200/v1/sys/init
+      url: "{{ schema }}://{{ inventory_hostname }}.node.consul:8200/v1/sys/init"
       method: PUT
       validate_certs: no
       body_format: json
@@ -35,11 +40,12 @@
         dest=./vault_init_data
     become: no
     run_once: yes
+
   when: not init_status.json.initialized
 
 - name: Check vault sealed status
   uri:
-    url: https://{{ inventory_hostname }}.node.consul:8200/v1/sys/seal-status
+    url: "{{ schema }}://{{ inventory_hostname }}.node.consul:8200/v1/sys/seal-status"
     validate_certs: no
   register: seal_status
   when: init_status.json.initialized
@@ -55,7 +61,7 @@
 
   - name: Unseal vault
     uri:
-      url: https://{{ inventory_hostname }}.node.consul:8200/v1/sys/unseal
+      url: "{{ schema }}://{{ inventory_hostname }}.node.consul:8200/v1/sys/unseal"
       method: PUT
       validate_certs: no
       body_format: json
@@ -69,17 +75,18 @@
 
   - name: Check vault sealed status
     uri:
-      url: https://{{ inventory_hostname }}.node.consul:8200/v1/sys/seal-status
+      url: "{{ schema }}://{{ inventory_hostname }}.node.consul:8200/v1/sys/seal-status"
       validate_certs: no
     register: seal_status
     failed_when: seal_status.json.sealed
+
   when: not init_status.json.initialized or seal_status.json.sealed
 
-- name: Check mounts
+- name: Wait for vault leader election
   uri:
-    url: https://vault.service.consul:8200/v1/sys/mounts
-    headers:
-      X-Vault-Token: "{{ vault_init_data.root_token }}"  
-  register: result
-  until: result.status == 200 and result.json
+    url: "{{ schema }}://vault.service.consul:8200/v1/sys/leader"
+    validate_certs: no
+  register: vault_leader
+  until: vault_leader.status == 200 and vault_leader.json.leader_address
+  retries: 10
   run_once: true
