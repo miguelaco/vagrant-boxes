@@ -58,8 +58,10 @@
       - { dest: "{{ consul_home }}/secrets/ca.crt", content: "{{ cert.json.data.ca_chain | last }}" }
       - { dest: "{{ consul_home }}/secrets/server.cert.pem", content: "{{ ([cert.json.data.certificate] + cert.json.data.ca_chain) | join('\n') }}" }
       - { dest: "{{ consul_home }}/secrets/server.key.pem", content: "{{ cert.json.data.private_key }}" }
+      - { dest: "/etc/pki/ca-trust/source/anchors/ca.crt", content: "{{ cert.json.data.ca_chain | last }}" }
     notify:
       - Start consul service
+      - Update CA certificates
 
   - name: Copy consul config file
     template:
@@ -123,8 +125,10 @@
     with_items:
       - { dest: "{{ vault_home }}/secrets/server.cert.pem", content: "{{ ([cert.json.data.certificate] + cert.json.data.ca_chain) | join('\n') }}" }
       - { dest: "{{ vault_home }}/secrets/server.key.pem", content: "{{ cert.json.data.private_key }}" }
+      - { dest: "/etc/pki/ca-trust/source/anchors/ca.crt", content: "{{ cert.json.data.ca_chain | last }}" }
     notify:
       - Start vault service
+      - Update CA certificates
 
   - name: Copy vault config file
     template:
