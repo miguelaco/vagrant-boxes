@@ -60,8 +60,6 @@
     set_fact:
       vault_tls_enabled: "{{ vault_certs.results | rejectattr('stat.exists') | list | length == 0 and not vault_reset_tls }}"
 
-  - debug: msg={{ vault_tls_enabled }}
-
   - name: Copy vault config file
     template:
       src={{ item.src }}

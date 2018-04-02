@@ -62,8 +62,6 @@
     set_fact:
       consul_tls_enabled: "{{ consul_certs.results | rejectattr('stat.exists') | list | length == 0 and not consul_reset_tls }}"
 
-  - debug: msg={{ consul_tls_enabled }}
-
   - name: Copy consul config file
     template:
       src={{ item.src }}
