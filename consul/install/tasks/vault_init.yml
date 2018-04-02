@@ -7,7 +7,7 @@
 
 - name: Set http schema
   set_fact:
-    schema: "{{ tls_enable | default(true) | ternary('https', 'http') }}"
+    schema: "{{ vault_tls_enabled | default(false) | ternary('https', 'http') }}"
 
 - name: Check vault init status
   uri:

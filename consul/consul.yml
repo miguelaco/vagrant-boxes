@@ -11,11 +11,15 @@
     consul_acl_master_token: 4a381b17-b693-4f8c-8cab-5fec1848a730
     consul_acl_agent_token: e721f4dc-9cdd-9331-2a3e-57cf3ac74f5f
     consul_acl_vault_token: 21d69103-2f32-acba-a3cd-f15c2b928f81
+    consul_reset_tls: false
+    consul_renew_secrets: false
 
     vault_version: 0.9.6
     vault_home: /opt/vault
     vault_config_file: /etc/vault.hcl
     vault_advertise_addr: 192.168.77.21/24
+    vault_reset_tls: false
+    vault_renew_secrets: false
 
   roles:
     - { role: dnsmasq, become: yes, tags: [ 'dnsmasq' ] }

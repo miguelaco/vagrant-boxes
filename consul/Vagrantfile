@@ -15,7 +15,7 @@ Vagrant.configure("2") do |config|
           ansible.compatibility_mode = "2.0"
           ansible.playbook = "consul.yml"
           ansible.verbose = true
-          #ansible.tags = [ "pki" ]
+          #ansible.tags = [ "consul", "securize" ]
         end
       end
     end

@@ -49,6 +49,21 @@
     notify:
       - Start consul service
 
+  - name: Check consul certificates
+    stat:
+      path: "{{ item }}"
+    register: consul_certs
+    with_items:
+      - "{{ consul_home }}/secrets/ca.crt"
+      - "{{ consul_home }}/secrets/server.cert.pem"
+      - "{{ consul_home }}/secrets/server.key.pem"
+
+  - name: Set consul_tls_enabled flag
+    set_fact:
+      consul_tls_enabled: "{{ consul_certs.results | rejectattr('stat.exists') | list | length == 0 and not consul_reset_tls }}"
+
+  - debug: msg={{ consul_tls_enabled }}
+
   - name: Copy consul config file
     template:
       src={{ item.src }}
@@ -57,7 +72,7 @@
       group=consul
       mode={{ item.mode }}
     with_items:
-      - { src: "consul.json.j2", dest: "{{ consul_config_file }}", mode: "0600" }
+      - { src: "{{ consul_tls_enabled | ternary('consul_tls.json.j2', 'consul.json.j2') }}", dest: "{{ consul_config_file }}", mode: "0600" }
       - { src: "consul.systemd.j2", dest: "/etc/systemd/system/consul.service", mode: "0644" }
     notify:
       - Start consul service

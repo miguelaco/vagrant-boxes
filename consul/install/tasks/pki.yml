@@ -6,9 +6,13 @@
   no_log: yes
   when: vault_init_data is not defined or vault_init_data.root_token is not defined
 
+- name: Set http schema
+  set_fact:
+    schema: "{{ vault_tls_enabled | default(false) | ternary('https', 'http') }}"
+
 - name: Check pki backend
   uri:
-    url: "http://vault.service.consul:8200/v1/sys/mounts"
+    url: "{{ schema }}://vault.service.consul:8200/v1/sys/mounts"
     method: GET
     validate_certs: no
     headers:
@@ -18,7 +22,7 @@
 
 - name: Mount pki backend
   uri:
-    url: "http://vault.service.consul:8200/v1/sys/mounts/pki"
+    url: "{{ schema }}://vault.service.consul:8200/v1/sys/mounts/pki"
     method: POST
     validate_certs: no
     status_code: 200, 204
@@ -32,7 +36,7 @@
 
 - name: Upload ca bundle
   uri:
-    url: "http://vault.service.consul:8200/v1/pki/config/ca"
+    url: "{{ schema }}://vault.service.consul:8200/v1/pki/config/ca"
     method: POST
     validate_certs: no
     status_code: 200, 204
