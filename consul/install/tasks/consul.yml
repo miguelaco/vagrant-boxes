@@ -26,7 +26,7 @@
   - name: Check consul package
     local_action:
       stat
-        path=consul/files/consul_{{ consul_version }}_linux_amd64.zip
+        path=install/files/consul_{{ consul_version }}_linux_amd64.zip
     become: no
     register: consul_package
 
@@ -44,7 +44,7 @@
 
   - name: Copy consul package to hosts
     unarchive:
-      src=files/consul_{{ consul_version }}_linux_amd64.zip
+      src=install/files/consul_{{ consul_version }}_linux_amd64.zip
       dest={{ consul_home }}/bin
     notify:
       - Start consul service

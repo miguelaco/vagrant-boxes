@@ -25,7 +25,7 @@
   - name: Check vault package
     local_action:
       stat
-        path=vault/files/vault_{{vault_version}}_linux_amd64.zip
+        path=install/files/vault_{{vault_version}}_linux_amd64.zip
     become: no
     register: vault_package
 
@@ -36,13 +36,14 @@
         dest=install/files
         force=no
     become: no
+    run_once: yes
     when: not vault_package.stat.exists
 
   - package: name=unzip state=present
 
   - name: Copy vault package to hosts
     unarchive:
-      src=files/vault_{{ vault_version }}_linux_amd64.zip
+      src=install/files/vault_{{ vault_version }}_linux_amd64.zip
       dest={{ vault_home }}/bin
     notify:
       - Start vault service
