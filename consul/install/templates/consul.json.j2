@@ -9,9 +9,6 @@
   "retry_join": [ "{{ consul_join_addrs | join('", "') }}" ],
   "encrypt": "{{ consul_encrypt }}",
   "bootstrap_expect": {{ consul_advertise_addrs | length }},
-{% if acl_agent is defined %}
-  "acl_agent_token": "{{ acl_agent.ID }}",
-{% endif %}
   "acl_datacenter": "dc1",
   "acl_default_policy": "deny",
   "acl_down_policy": "deny"

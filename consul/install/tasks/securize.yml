@@ -72,13 +72,11 @@
 
     - name: Copy consul config file
       template:
-        src={{ item.src }}
-        dest={{ item.dest }}
+        src=consul_tls.json.j2
+        dest={{ consul_config_dir }}/tls.json
         owner=consul
         group=consul
-        mode={{ item.mode }}
-      with_items:
-        - { src: "consul_tls.json.j2", dest: "{{ consul_config_file }}", mode: "0600" }
+        mode=0600
       notify:
         - Start consul service
 

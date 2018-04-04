@@ -70,7 +70,7 @@
       group=consul
       mode={{ item.mode }}
     with_items:
-      - { src: "{{ consul_tls_enabled | ternary('consul_tls.json.j2', 'consul.json.j2') }}", dest: "{{ consul_config_file }}", mode: "0600" }
+      - { src: "consul.json.j2", dest: "{{ consul_config_file }}", mode: "0600" }
       - { src: "consul.systemd.j2", dest: "/etc/systemd/system/consul.service", mode: "0644" }
     notify:
       - Start consul service
@@ -160,10 +160,10 @@
     when: acl_agent is undefined
     no_log: yes
 
-  - name: Set agent ACL in consul config file
+  - name: Copy ACL consul config file
     template:
-      src={{ consul_tls_enabled | ternary('consul_tls.json.j2', 'consul.json.j2') }}
-      dest={{ consul_config_file }}
+      src=consul_acl.json.j2
+      dest={{ consul_config_dir }}/acl.json
       owner=consul
       group=consul
       mode=0600
