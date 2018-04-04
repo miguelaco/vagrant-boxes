@@ -12,7 +12,6 @@
 - name: Check vault init status
   uri:
     url: "{{ schema }}://{{ inventory_hostname }}.node.consul:8200/v1/sys/init"
-    validate_certs: no
     status_code: 200, 429, 500, 501, 503
   register: init_status
   until: init_status.status == 200 and init_status.json
@@ -24,7 +23,6 @@
     uri:
       url: "{{ schema }}://{{ inventory_hostname }}.node.consul:8200/v1/sys/init"
       method: PUT
-      validate_certs: no
       body_format: json
       body:
         secret_shares: 5
@@ -46,7 +44,6 @@
 - name: Check vault sealed status
   uri:
     url: "{{ schema }}://{{ inventory_hostname }}.node.consul:8200/v1/sys/seal-status"
-    validate_certs: no
   register: seal_status
   when: init_status.json.initialized
 
@@ -63,7 +60,6 @@
     uri:
       url: "{{ schema }}://{{ inventory_hostname }}.node.consul:8200/v1/sys/unseal"
       method: PUT
-      validate_certs: no
       body_format: json
       body:
         key: "{{ item }}"
@@ -76,7 +72,6 @@
   - name: Check vault sealed status
     uri:
       url: "{{ schema }}://{{ inventory_hostname }}.node.consul:8200/v1/sys/seal-status"
-      validate_certs: no
     register: seal_status
     failed_when: seal_status.json.sealed
 
@@ -85,7 +80,6 @@
 - name: Wait for vault leader election
   uri:
     url: "{{ schema }}://vault.service.consul:8200/v1/sys/leader"
-    validate_certs: no
   register: vault_leader
   until: vault_leader.status == 200 and vault_leader.json.leader_address
   retries: 10

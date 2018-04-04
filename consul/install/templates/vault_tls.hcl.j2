@@ -1,5 +1,5 @@
 backend "consul" {
-    token = "21d69103-2f32-acba-a3cd-f15c2b928f81"
+    token = "{{ acl_vault.ID }}"
 }
 
 listener "tcp" {

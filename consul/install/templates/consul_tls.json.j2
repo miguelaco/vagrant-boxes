@@ -20,9 +20,10 @@
   "cert_file": "{{ consul_home }}/secrets/server.cert.pem",
   "verify_outgoing": true,
   "verify_server_hostname": true,
+{% if acl_agent is defined %}
+  "acl_agent_token": "{{ acl_agent.ID }}",
+{% endif %}
   "acl_datacenter": "dc1",
   "acl_default_policy": "deny",
-  "acl_down_policy": "deny",
-  "acl_master_token": "{{ consul_acl_master_token }}",
-  "acl_agent_token": "{{ consul_acl_agent_token }}"
+  "acl_down_policy": "deny"
 }

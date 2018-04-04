@@ -85,30 +85,104 @@
 - always:
   - meta: flush_handlers
 
-- name: Agent ACL updated
-  uri:
-    url: http://{{ ansible_host }}:8500/v1/acl/update
-    method: PUT
-    headers:
-      X-Consul-Token: "{{ consul_acl_master_token }}"
-    body_format: json
-    body:
-      Id: "{{ consul_acl_agent_token }}"
-      Name: Agent token
-      Type: client
-      Rules: "node \"\" { policy = \"write\" } service \"\" { policy = \"read\" }"
-  run_once: true
+- block:
+  - name: Bootstrap ACL system
+    uri:
+      url: http://{{ ansible_host }}:8500/v1/acl/bootstrap
+      method: PUT
+      status_code: 200, 403
+    register: root_token
+    no_log: yes
+    run_once: true
 
-- name: Anonymous ACL updated
-  uri:
-    url: http://{{ ansible_host }}:8500/v1/acl/update
-    method: PUT
-    headers:
-      X-Consul-Token: "{{ consul_acl_master_token }}"
-    body_format: json
-    body:
-      Id: anonymous
-      Name: Anonymous Token
-      Type: client
-      Rules: "node \"\" { policy = \"read\" } service \"\" { policy = \"read\" }"
-  run_once: true
+  - name: Save consul init data
+    local_action:
+      copy
+        content={{ root_token.json }}
+        dest=./consul_init_data
+    become: no
+    run_once: yes
+    when: root_token.status == 200 and root_token.json
+
+  - name: Lookup consul init data
+    set_fact:
+      consul_init_data: "{{ lookup('file', 'consul_init_data') }}"
+    no_log: yes
+
+  - name: Check agent ACL
+    uri:
+      url: http://{{ ansible_host }}:8500/v1/acl/list
+      headers:
+        X-Consul-Token: "{{ consul_init_data.ID }}"
+    register: acls
+    no_log: yes
+    run_once: true
+
+  - set_fact:
+      acl_agent: "{{ acls.json | selectattr('Name', 'equalto', 'acl_agent_token') | list | first }}"
+    no_log: yes
+    when: acls.json | selectattr('Name', 'equalto', 'acl_agent_token') | list
+
+  - name: Create agent ACL
+    uri:
+      url: http://{{ ansible_host }}:8500/v1/acl/create
+      method: PUT
+      headers:
+        X-Consul-Token: "{{ consul_init_data.ID }}"
+      body_format: json
+      body:
+        Name: acl_agent_token
+        Type: client
+        Rules: "node \"\" { policy = \"write\" } service \"\" { policy = \"read\" }"
+    register: agent_acl_response
+    no_log: yes
+    when: acl_agent is undefined
+    run_once: true
+
+  - name: Update agent ACL
+    uri:
+      url: http://{{ ansible_host }}:8500/v1/acl/update
+      method: PUT
+      headers:
+        X-Consul-Token: "{{ consul_init_data.ID }}"
+      body_format: json
+      body:
+        Id: "{{ acl_agent.ID }}"
+        Name: acl_agent_token
+        Type: client
+        Rules: "node \"\" { policy = \"write\" } service \"\" { policy = \"read\" }"
+    no_log: yes
+    when: acl_agent is defined
+    run_once: true
+
+  - set_fact:
+      acl_agent: "{{ agent_acl_response.json }}"
+    when: acl_agent is undefined
+    no_log: yes
+
+  - name: Set agent ACL in consul config file
+    template:
+      src={{ consul_tls_enabled | ternary('consul_tls.json.j2', 'consul.json.j2') }}
+      dest={{ consul_config_file }}
+      owner=consul
+      group=consul
+      mode=0600
+    notify:
+      - Start consul service
+
+  - name: Anonymous ACL
+    uri:
+      url: http://{{ ansible_host }}:8500/v1/acl/update
+      method: PUT
+      headers:
+        X-Consul-Token: "{{ consul_init_data.ID }}"
+      body_format: json
+      body:
+        Id: anonymous
+        Name: Anonymous Token
+        Type: client
+        Rules: "node \"\" { policy = \"read\" } service \"\" { policy = \"read\" }"
+    run_once: true
+
+- always:
+  - meta: flush_handlers
