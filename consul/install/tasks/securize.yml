@@ -70,7 +70,7 @@
         - Start consul service
         - Update CA certificates
 
-    - name: Copy consul config file
+    - name: Copy TLS consul config file
       template:
         src=consul_tls.json.j2
         dest={{ consul_config_dir }}/tls.json
