@@ -1,0 +1,19 @@
+---
+- hosts: all
+  become: yes
+  vars:
+    vault_renew_secrets: false
+
+  tasks:
+  - package: name={{ item }} state=present
+    with_items:
+      - docker
+      - bind-utils
+
+  - systemd:
+      name: docker
+      state: started
+      enabled: yes
+      daemon-reload: yes
+
+  - command: docker pull consul
