@@ -7,7 +7,6 @@
   "bind_addr": "{{ consul_advertise_addr }}",
   "advertise_addr": "{{ consul_advertise_addr }}",
   "retry_join": [ "{{ consul_join_addrs | join('", "') }}" ],
-  "encrypt": "{{ consul_encrypt }}",
   "bootstrap_expect": {{ consul_advertise_addrs | length }},
   "acl_datacenter": "dc1",
   "acl_default_policy": "deny",

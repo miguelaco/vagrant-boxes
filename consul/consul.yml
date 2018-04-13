@@ -7,14 +7,13 @@
     consul_config_dir: /etc/consul.d
     consul_config_file: /etc/consul.json
     consul_advertise_addrs: ["192.168.77.21", "192.168.77.22"]
-    consul_encrypt: 8PwI2n8UMRKmi7csQLKLkw==
     consul_reset_tls: false
     consul_renew_secrets: false
 
     vault_version: 0.9.6
     vault_home: /opt/vault
     vault_config_file: /etc/vault.hcl
-    vault_advertise_addr: 192.168.77.21/24
+    vault_advertise_addrs: ["192.168.77.21", "192.168.77.22"]
     vault_reset_tls: false
     vault_renew_secrets: false
 

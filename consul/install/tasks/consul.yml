@@ -75,6 +75,30 @@
     notify:
       - Start consul service
 
+  - name: Check encrypt config file
+    stat:
+      path: "{{ consul_config_dir }}/encrypt.json"
+    register: encrypt_file
+
+  - name: Generate encryption key
+    command: "{{ consul_home }}/bin/consul keygen"
+    register: keygen
+    run_once: yes
+    when: not encrypt_file.stat.exists
+
+  - debug: msg={{ keygen }}
+
+  - name: Copy encrypt config file
+    template:
+      src=encrypt.json.j2
+      dest={{ consul_config_dir }}/encrypt.json
+      owner=consul
+      group=consul
+      mode=0600
+    when: not encrypt_file.stat.exists
+    notify:
+      - Start consul service
+
   - name: Set consul env variables
     template:
       src=templates/consul.sh.j2
