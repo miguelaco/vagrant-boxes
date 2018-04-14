@@ -86,8 +86,6 @@
     run_once: yes
     when: not encrypt_file.stat.exists
 
-  - debug: msg={{ keygen }}
-
   - name: Copy encrypt config file
     template:
       src=encrypt.json.j2
