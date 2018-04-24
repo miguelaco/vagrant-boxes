@@ -1,0 +1,31 @@
+machine_types = YAML.load_file(Pathname.new('config.yml').realpath)
+
+Vagrant.configure("2") do |config|
+  config.ssh.insert_key = false
+  machine_types.each do |name, machine_type|
+    config.vm.box = "bento/centos-7"
+    config.vm.define name do |machine|
+      machine.vm.hostname = "#{name}.dcos"
+      machine.vm.network "private_network", ip: machine_type['ip']
+
+      machine.vm.provider 'virtualbox' do |vbox|
+#        vbox.name = machine.vm.hostname
+        vbox.cpus = machine_type['cpus'] || 2
+        vbox.memory = machine_type['memory'] || 2048
+      end
+
+      # Only execute once the Ansible provisioner,
+      # when all the machines are up and ready.
+      if machine_type['type'] == 'boot'
+        machine.vm.provision :ansible do |ansible|
+          # Disable default limit to connect to all the machines
+          ansible.limit = "all"
+          ansible.compatibility_mode = "2.0"
+          ansible.playbook = "site.yml"
+          ansible.verbose = true
+          #ansible.tags = [ "consul" ]
+        end
+      end
+    end
+  end
+end
