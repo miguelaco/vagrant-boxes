@@ -2,14 +2,13 @@
 
 - name: Waiting for bootstrap healthy state
   wait_for:
-    host: 192.168.65.10
+    host: "{{ hostvars['boot'].ansible_host }}"
     port: 8080
-    delay: 5
-    timeout: 10
+    timeout: 30
 
 - name: Download dcos_install.sh
   get_url:
-    url=http://192.168.65.10:8080/dcos_install.sh
+    url=http://{{ hostvars['boot'].ansible_host }}:8080/dcos_install.sh
     dest=/home/vagrant/dcos_install.sh
 
 - name: Install dcos

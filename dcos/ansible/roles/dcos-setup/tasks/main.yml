@@ -23,20 +23,19 @@
     dest: /home/vagrant/genconf/config.yaml
     content: |
       ---
-      bootstrap_url: http://192.168.65.10:8080
+      bootstrap_url: http://{{ hostvars['boot'].ansible_host }}:8080
       cluster_name: 'dcos-vagrant'
       exhibitor_storage_backend: static
       ip_detect_filename: /genconf/ip-detect
       master_discovery: static
       master_list:
-      - 192.168.65.20
+      {% for host in groups['masters'] %}
+      - {{ hostvars[host]['ansible_host'] }}
+      {% endfor %}
       resolvers:
       - 8.8.8.8
       ssh_port: 22
       ssh_user: vagrant
-      superuser_username: admin
-      superuser_password_hash: $6$rounds=656000$J1uOqAb95/iblDzm$ejRz.4wZiBJyKK0Wlmv4zH4c1bRbO0/P1KbOLSm8NJfQChzWcDJ.twmbCq9LS83bWrt7S6ZaOzicwN/bBnC3S1
-      check_time: false
 
 - name: Generate DC/OS config
   shell: bash dcos_generate_config.sh && touch .skip
@@ -54,6 +53,6 @@
     name: nginx-bootstrap
     image: nginx
     ports:
-      - "192.168.65.10:8080:80"
+      - "{{ hostvars['boot'].ansible_host }}:8080:80"
     volumes:
       - /home/vagrant/genconf/serve:/usr/share/nginx/html
