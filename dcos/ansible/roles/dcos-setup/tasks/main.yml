@@ -1,0 +1,59 @@
+---
+
+- name: Download dcos_generate_config.sh
+  get_url:
+    url=https://downloads.dcos.io/dcos/stable/1.11.0/commit/b6d6ad4722600877fde2860122f870031d109da3/dcos_generate_config.sh
+    dest=/home/vagrant/dcos_generate_config.sh
+    checksum=sha256:f42800c773a79c8fa4b5ae837626805ac67420d388433bbc9891520b17668ba9
+
+- name: Create genconf dir
+  file: path=/home/vagrant/genconf state=directory
+
+- name: Create ip-detect script
+  copy:
+    dest: /home/vagrant/genconf/ip-detect
+    content: |
+      #!/usr/bin/env bash
+      set -o nounset -o errexit
+      export PATH=/usr/sbin:/usr/bin:$PATH
+      echo $(ip addr show enp0s8 | grep -Eo '[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}' | head -1)
+
+- name: Create config.yaml
+  copy:
+    dest: /home/vagrant/genconf/config.yaml
+    content: |
+      ---
+      bootstrap_url: http://192.168.65.10:8080
+      cluster_name: 'dcos-vagrant'
+      exhibitor_storage_backend: static
+      ip_detect_filename: /genconf/ip-detect
+      master_discovery: static
+      master_list:
+      - 192.168.65.20
+      resolvers:
+      - 8.8.8.8
+      ssh_port: 22
+      ssh_user: vagrant
+      superuser_username: admin
+      superuser_password_hash: $6$rounds=656000$J1uOqAb95/iblDzm$ejRz.4wZiBJyKK0Wlmv4zH4c1bRbO0/P1KbOLSm8NJfQChzWcDJ.twmbCq9LS83bWrt7S6ZaOzicwN/bBnC3S1
+      check_time: false
+
+- name: Generate DC/OS config
+  shell: bash dcos_generate_config.sh && touch .skip
+  args:
+    chdir: /home/vagrant
+    creates: .skip
+
+- name: Install prerequisites for docker module
+  yum: name={{ item }} state=latest
+  with_items:
+    - docker-python
+
+- name: Running nginx docker
+  docker_container:
+    name: nginx-bootstrap
+    image: nginx
+    ports:
+      - "192.168.65.10:8080:80"
+    volumes:
+      - /home/vagrant/genconf/serve:/usr/share/nginx/html

@@ -1,0 +1,21 @@
+---
+
+- hosts: all
+  roles:
+    - common
+    - docker
+    - dcos-cli
+
+- hosts: bootstrap
+  roles:
+    - dcos-setup
+
+- hosts: masters
+  strategy: free
+  roles:
+    - dcos-install
+
+- hosts: agents
+  strategy: free
+  roles:
+    - dcos-install

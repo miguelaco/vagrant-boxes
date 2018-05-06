@@ -1,0 +1,17 @@
+---
+
+# [ -d /usr/local/bin ] || sudo mkdir -p /usr/local/bin &&
+# curl https://downloads.dcos.io/binaries/cli/linux/x86-64/dcos-1.11/dcos -o dcos &&
+# sudo mv dcos /usr/local/bin &&
+# sudo chmod +x /usr/local/bin/dcos &&
+# dcos cluster setup http://192.168.65.20 &&
+# dcos
+
+- name: Download dcos-cli
+  get_url:
+    url=https://downloads.dcos.io/binaries/cli/linux/x86-64/dcos-1.11/dcos
+    dest=/usr/local/bin/dcos
+    mode=0755
+
+- name: Configure dcos-cli
+  shell: /usr/local/bin/dcos config set core.dcos_url http://192.168.65.20
