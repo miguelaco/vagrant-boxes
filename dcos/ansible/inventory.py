@@ -35,6 +35,9 @@ class InventoryTemplate:
             "node_type": "master"
         }
     },
+    "kms": {
+        "hosts": [%(_get_kms|_pattern_a)s]
+    },
     "agents": {
         "children": ["agents-private", "agents-public"]
     },
@@ -89,21 +92,28 @@ class InventoryTemplate:
     def _get_masters(self):
         cad = []
         for i in cluster_yml:
-            if cluster_yml[i].get('type') == 'master':
+            if 'master' in cluster_yml[i].get('type'):
+                cad.append(i)
+        return cad
+
+    def _get_kms(self):
+        cad = []
+        for i in cluster_yml:
+            if 'kms' in cluster_yml[i].get('type'):
                 cad.append(i)
         return cad
 
     def _get_privates(iself):
         cad = []
         for i in cluster_yml:
-            if cluster_yml[i].get('type') == 'agent-private':
+            if 'agent-private' in cluster_yml[i].get('type'):
                 cad.append(i)
         return cad
 
     def _get_publics(iself):
         cad = []
         for i in cluster_yml:
-            if cluster_yml[i].get('type') == 'agent-public':
+            if 'agent-public' in cluster_yml[i].get('type'):
                 cad.append(i)
         return cad
 

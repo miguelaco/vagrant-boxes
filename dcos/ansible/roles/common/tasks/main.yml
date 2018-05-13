@@ -18,6 +18,26 @@
 #  with_items:
 #    - "{{ system_epel_packages }}"
 
+- name: Create ip-detect script
+  copy:
+    dest: /usr/local/bin/ip-detect
+    content: |
+      #!/usr/bin/env bash
+      set -o nounset -o errexit
+      export PATH=/usr/sbin:/usr/bin:$PATH
+      echo $(ip addr show enp0s8 | grep -Eo '[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}' | head -1)
+    mode: 0700
+
+- name: Execute ip-detect on all nodes
+  command: /usr/local/bin/ip-detect
+  register: ip_detect_result
+
+- name: Register fact with detected ip
+  set_fact:
+    detected_ipv4: "{{ ip_detect_result.stdout }}"
+
+- debug: msg="Detected ip for node is {{ detected_ipv4 }}"
+
 - name: Disabling SELinux (anti-pattern)
   selinux:
     policy: targeted

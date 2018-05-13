@@ -14,4 +14,4 @@
     mode=0755
 
 - name: Configure dcos-cli
-  shell: /usr/local/bin/dcos config set core.dcos_url http://{{ hostvars['m1'].ansible_host }}
+  shell: /usr/local/bin/dcos config set core.dcos_url http://{{ hostvars['m1'].detected_ipv4 }}

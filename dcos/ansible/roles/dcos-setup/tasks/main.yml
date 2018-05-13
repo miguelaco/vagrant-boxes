@@ -9,31 +9,29 @@
 - name: Create genconf dir
   file: path=/home/vagrant/genconf state=directory
 
-- name: Create ip-detect script
+- name: Copy ip-detect script to genconf dir
   copy:
+    src: /usr/local/bin/ip-detect
     dest: /home/vagrant/genconf/ip-detect
-    content: |
-      #!/usr/bin/env bash
-      set -o nounset -o errexit
-      export PATH=/usr/sbin:/usr/bin:$PATH
-      echo $(ip addr show enp0s8 | grep -Eo '[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}' | head -1)
+    remote_src: yes
 
 - name: Create config.yaml
   copy:
     dest: /home/vagrant/genconf/config.yaml
     content: |
       ---
-      bootstrap_url: http://{{ hostvars['boot'].ansible_host }}:8080
-      cluster_name: 'dcos-vagrant'
+      bootstrap_url: http://{{ hostvars['boot'].detected_ipv4 }}:8080
+      cluster_name: {{ cluster_name }}
       exhibitor_storage_backend: static
-      ip_detect_filename: /genconf/ip-detect
       master_discovery: static
       master_list:
       {% for host in groups['masters'] %}
-      - {{ hostvars[host]['ansible_host'] }}
+      - {{ hostvars[host]['detected_ipv4'] }}
       {% endfor %}
       resolvers:
-      - 8.8.8.8
+      {% for host in dns_resolvers %}
+      - {{ host }}
+      {% endfor %}
       ssh_port: 22
       ssh_user: vagrant
 
@@ -53,6 +51,6 @@
     name: nginx-bootstrap
     image: nginx
     ports:
-      - "{{ hostvars['boot'].ansible_host }}:8080:80"
+      - "{{ hostvars['boot'].detected_ipv4 }}:8080:80"
     volumes:
       - /home/vagrant/genconf/serve:/usr/share/nginx/html

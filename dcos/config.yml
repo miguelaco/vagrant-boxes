@@ -2,7 +2,7 @@ m1:
   ip: 192.168.65.20
   cpus: 2
   memory: 1024
-  type: master
+  type: [ master, kms ]
 a1:
   ip: 192.168.65.30
   cpus: 4

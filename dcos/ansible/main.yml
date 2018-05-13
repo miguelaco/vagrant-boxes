@@ -2,20 +2,24 @@
 
 - hosts: all
   roles:
-    - common
-    - docker
-    - dcos-cli
+    - { role: common, tags: [ 'common', 'always' ] }
+    - { role: docker, tags: [ 'docker', 'always' ] }
+    - { role: dcos-cli, tags: [ 'dcos', dcos-cli' ] }
+
+- hosts: kms
+  roles:
+    - { role: kms, tags: [ 'kms' ] }
 
 - hosts: bootstrap
   roles:
-    - dcos-setup
+    - { role: dcos-setup, tags: [ 'dcos', 'dcos-setup' ] }
 
 - hosts: masters
   strategy: free
   roles:
-    - dcos-install
+    - { role: dcos-install, tags: [ 'dcos', 'dcos-install', 'masters' ] }
 
 - hosts: agents
   strategy: free
   roles:
-    - dcos-install
+    - { role: dcos-install, tags: [ 'dcos', 'dcos-install', 'agents' ] }
