@@ -1,25 +1,30 @@
 ---
 
 - hosts: all
+  become: yes
   roles:
     - { role: common, tags: [ 'common', 'always' ] }
     - { role: docker, tags: [ 'docker', 'always' ] }
     - { role: dcos-cli, tags: [ 'dcos', dcos-cli' ] }
 
 - hosts: kms
+  become: yes
   roles:
     - { role: kms, tags: [ 'kms' ] }
 
 - hosts: bootstrap
+  become: yes
   roles:
     - { role: dcos-setup, tags: [ 'dcos', 'dcos-setup' ] }
 
 - hosts: masters
+  become: yes
   strategy: free
   roles:
     - { role: dcos-install, tags: [ 'dcos', 'dcos-install', 'masters' ] }
 
 - hosts: agents
+  become: yes
   strategy: free
   roles:
     - { role: dcos-install, tags: [ 'dcos', 'dcos-install', 'agents' ] }

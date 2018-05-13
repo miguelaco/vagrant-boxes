@@ -22,8 +22,7 @@ class InventoryTemplate:
     "all": {
         "hosts": [%(_get_all|_pattern_a)s],
         "vars": {
-            "ansible_user": "vagrant",
-            "ansible_become": "true"
+            "ansible_user": "vagrant"
         }
     },
     "bootstrap": {
