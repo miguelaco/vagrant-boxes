@@ -1,0 +1,6 @@
+---
+- hosts: all
+  become: yes
+  roles:
+    - { role: dnsmasq, tags: [ 'dnsmasq' ] }
+    - { role: consul, tags: [ 'consul' ] }

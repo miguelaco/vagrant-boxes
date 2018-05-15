@@ -1,0 +1,11 @@
+---
+
+consul_version: 1.1.0
+consul_home: /opt/consul
+consul_config_dir: /etc/consul.d
+consul_config_file: /etc/consul.json
+consul_reset_tls: false
+consul_renew_secrets: false
+consul_init_dir: "{{ playbook_dir }}/.consul_init"
+consul_node_name: "{{ inventory_hostname_short }}"
+consul_domain: consul.

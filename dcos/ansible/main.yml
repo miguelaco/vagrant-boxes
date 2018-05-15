@@ -10,7 +10,7 @@
 - hosts: kms
   become: yes
   roles:
-    - { role: kms, tags: [ 'kms' ] }
+    - { role: consul, tags: [ 'consul', 'kms' ] }
 
 - hosts: bootstrap
   become: yes

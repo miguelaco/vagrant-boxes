@@ -1,0 +1,21 @@
+{% set consul_advertise_addrs = play_hosts|map('extract', hostvars, 'detected_ipv4') | list %}
+{% set consul_join_addrs = consul_advertise_addrs | difference(detected_ipv4) %}
+{
+  "node_name": "{{ consul_node_name }}",
+  "domain": "{{ consul_domain }}",
+  "server": {{ consul_is_server | default("true") }},
+  "data_dir": "{{ consul_home }}/data",
+  "bind_addr": "{{ detected_ipv4 }}",
+  "advertise_addr": "{{ detected_ipv4 }}",
+{% if consul_join_addrs | length > 0 %}
+  "retry_join": [ "{{ consul_join_addrs | join('", "') }}" ],
+{% endif %}
+  "bootstrap_expect": {{ consul_advertise_addrs | length }},
+  "encrypt": "{{ consul_encrypt }}",
+{% if acl_agent_token is defined %}
+  "acl_agent_token": "{{ acl_agent_token }}",
+{% endif %}
+  "acl_datacenter": "dc1",
+  "acl_default_policy": "deny",
+  "acl_down_policy": "deny"
+}

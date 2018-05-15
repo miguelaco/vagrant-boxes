@@ -28,14 +28,14 @@ class InventoryTemplate:
     "bootstrap": {
         "hosts": ["boot"]
     },
+    "kms": {
+        "hosts": [%(_get_kms|_pattern_a)s]
+    },
     "masters": {
         "hosts": [%(_get_masters|_pattern_a)s],
         "vars": {
             "node_type": "master"
         }
-    },
-    "kms": {
-        "hosts": [%(_get_kms|_pattern_a)s]
     },
     "agents": {
         "children": ["agents-private", "agents-public"]
