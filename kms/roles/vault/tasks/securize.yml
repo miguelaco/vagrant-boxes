@@ -1,12 +1,6 @@
 ---
 
 - block:
-  - name: Lookup vault init data
-    set_fact:
-      vault_init_data: "{{ lookup('file', 'vault_init_data') }}"
-    no_log: not debug | default(true)
-    when: vault_init_data is not defined or vault_init_data.root_token is not defined
-
   - name: Set http schema
     set_fact:
       schema: "{{ vault_tls_enabled | default(false) | ternary('https', 'http') }}"
@@ -15,7 +9,7 @@
     # curl -XPOST -H "X-Vault-Token: fc6620f7-41a8-cdbb-030e-6a9deb70d819" https://vault.service.consul:8200/v1/pki/roles/consul -d '{"allowed_domains": ["consul"], "allow_subdomains": true}'
     - name: Create consul role
       uri:
-        url: "{{ schema }}://vault.service.consul:8200/v1/pki/roles/consul"
+        url: "{{ schema }}://{{ vault_service_consul }}:8200/v1/pki/roles/consul"
         method: POST
         status_code: 200, 204
         headers:
@@ -30,15 +24,15 @@
     # curl -XPOST -H "X-Vault-Token: fc6620f7-41a8-cdbb-030e-6a9deb70d819" https://vault.service.consul:8200/v1/pki/issue/consul -d '{"common_name": "vault.service.consul", "alt_names": "active.vault.service.consul, standby.vault.service.consul, *.node.consul"}'
     - name: Create consul cert
       uri:
-        url: "{{ schema }}://vault.service.consul:8200/v1/pki/issue/consul"
+        url: "{{ schema }}://{{ vault_service_consul }}:8200/v1/pki/issue/consul"
         method: POST
         status_code: 200, 204
         headers:
           X-Vault-Token: "{{ vault_init_data.root_token }}"
         body_format: json
         body:
-          common_name: consul.service.consul
-          alt_names: "*.node.consul, *.node.dc1.consul, server.dc1.consul"
+          common_name: "{{ consul_service_consul }}"
+          alt_names: "*.node.{{ consul_domain }}, *.node.{{ consul_datacenter }}.{{ consul_domain }}, server.{{ consul_datacenter }}.{{ consul_domain }}"
       register: cert
       no_log: not debug | default(true)
       run_once: true
@@ -90,7 +84,7 @@
     # curl -XPOST -H "X-Vault-Token: fc6620f7-41a8-cdbb-030e-6a9deb70d819" https://vault.service.consul:8200/v1/pki/roles/consul -d '{"allowed_domains": ["consul"], "allow_subdomains": true}'
     - name: Create vault role
       uri:
-        url: "{{ schema }}://vault.service.consul:8200/v1/pki/roles/vault"
+        url: "{{ schema }}://{{ vault_service_consul }}:8200/v1/pki/roles/vault"
         method: POST
         status_code: 200, 204
         headers:
@@ -105,7 +99,7 @@
     # curl -XPOST -H "X-Vault-Token: fc6620f7-41a8-cdbb-030e-6a9deb70d819" https://vault.service.consul:8200/v1/pki/issue/consul -d '{"common_name": "vault.service.consul", "alt_names": "active.vault.service.consul, standby.vault.service.consul, *.node.consul"}'
     - name: Create vault cert
       uri:
-        url: "{{ schema }}://vault.service.consul:8200/v1/pki/issue/vault"
+        url: "{{ schema }}://{{ vault_service_consul }}:8200/v1/pki/issue/vault"
         method: POST
         status_code: 200, 204
         headers:

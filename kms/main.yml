@@ -4,6 +4,16 @@
   become: yes
   vars:
     consul_domain: kms
-  roles:
-    - { role: consul, tags: [ 'consul' ] }
-    - { role: vault, tags: [ 'vault' ] }
+  tasks:
+    - import_role:
+        name: consul
+      tags: ['consul']
+
+    - import_role:
+        name: vault
+      tags: ['vault']
+
+    - import_role:
+        name: consul
+        tasks_from: tls
+      tags: ['tls']

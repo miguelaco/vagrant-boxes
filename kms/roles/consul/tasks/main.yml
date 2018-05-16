@@ -112,4 +112,3 @@
   until: result.status == 200 and result.json
   retries: 10
   run_once: true
-  listen: Start consul service

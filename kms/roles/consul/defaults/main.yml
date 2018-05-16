@@ -5,9 +5,13 @@ consul_home: /usr/local
 consul_data_dir: /var/consul
 consul_config_dir: /etc/consul.d
 consul_config_file: /etc/consul.json
-consul_init_dir: "{{ playbook_dir }}/.consul_init"
+consul_secrets_dir: /etc/consul/secrets
+
 consul_node_name: "{{ inventory_hostname_short }}"
 consul_domain: consul
 consul_datacenter: dc1
 node_consul: "{{ inventory_hostname_short }}.node.{{ consul_domain }}"
 consul_service_consul: consul.service.{{ consul_domain }}
+vault_service_consul: vault.service.{{ consul_domain }}
+vault_init_dir: "{{ playbook_dir }}/.vault_init"
+consul_init_dir: "{{ playbook_dir }}/.consul_init"
