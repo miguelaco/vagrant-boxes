@@ -1,0 +1,85 @@
+---
+
+- block:
+  - name: Create vault group
+    group: name=vault system=yes
+
+  - name: Create vault user
+    user:
+      name=vault
+      group=vault
+      system=yes
+
+  - name: Create vault home dir
+    file:
+      path: "{{ item }}"
+      state: directory
+    with_items:
+      - "{{ vault_home }}"
+      - "{{ vault_home }}/bin"
+
+  - name: Create vault init directory
+    local_action: file path={{ vault_init_dir }} state=directory
+    become: no
+    run_once: yes
+
+  - name: Check vault package
+    local_action:
+      stat
+        path=install/files/vault_{{vault_version}}_linux_amd64.zip
+    become: no
+    register: vault_package
+
+  - name: Download vault package locally
+    local_action:
+      get_url
+        url=https://releases.hashicorp.com/vault/{{vault_version}}/vault_{{vault_version}}_linux_amd64.zip
+        dest={{ role_path }}/files
+        force=no
+    become: no
+    run_once: yes
+    when: not vault_package.stat.exists
+
+  - package: name=unzip state=present
+
+  - name: Copy vault package to hosts
+    unarchive:
+      src={{ role_path }}/files/vault_{{ vault_version }}_linux_amd64.zip
+      dest={{ vault_home }}/bin
+      owner=vault
+      group=vault
+      mode=0755
+    notify:
+      - Start vault service
+
+  - name: Setup consul ACL
+    import_tasks: acl.yml
+
+  - name: Copy vault config file
+    template:
+      src={{ item.src }}
+      dest={{ item.dest }}
+      owner=vault
+      group=vault
+      mode={{ item.mode }}
+    with_items:
+      - { src: vault.hcl.j2, dest: "{{ vault_config_file }}", mode: "0600" }
+      - { src: "vault.systemd.j2", dest: "/etc/systemd/system/vault.service", mode: "0644" }
+    notify:
+      - Start vault service
+
+  - name: Set mlock capabilities for vault
+    shell: setcap cap_ipc_lock=+ep {{ vault_home }}/bin/vault
+
+  - name: Set vault env variables
+    template:
+      src=templates/vault.sh.j2
+      dest=/etc/profile.d/vault.sh
+      owner=vault
+      group=vault
+
+- always:
+  - meta: flush_handlers
+
+- name: Init vault
+  import_tasks: init.yml

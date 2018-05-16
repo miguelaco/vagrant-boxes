@@ -1,0 +1,84 @@
+---
+
+- name: Set http schema
+  set_fact:
+    schema: "{{ vault_tls_enabled | default(false) | ternary('https', 'http') }}"
+
+- name: Check vault init status
+  uri:
+    url: "{{ schema }}://{{ node_consul }}:8200/v1/sys/init"
+    status_code: 200, 429, 500, 501, 503
+  register: init_status_response
+  until: init_status_response.status == 200 and init_status_response.json
+  retries: 5
+  run_once: true
+
+- block:
+  - name: Init vault
+    uri:
+      url: "{{ schema }}://{{ node_consul }}:8200/v1/sys/init"
+      method: PUT
+      body_format: json
+      body:
+        secret_shares: 5
+        secret_threshold: 3
+    register: init_response
+    no_log: not debug | default(true)
+    run_once: true
+
+  - name: Save vault init data
+    local_action:
+      copy
+        content={{ init_response.json[item] }}
+        dest={{ vault_init_dir }}/{{ item }}
+    become: no
+    run_once: yes
+    with_items:
+      - keys
+      - root_token
+
+  when: not init_status_response.json.initialized
+
+- name: Check vault sealed status
+  uri:
+    url: "{{ schema }}://{{ node_consul }}:8200/v1/sys/seal-status"
+  register: seal_status_response
+  when: init_status_response.json.initialized
+
+- name: Lookup vault unseal keys
+  set_fact:
+    vault_unseal_keys: "{{ lookup('file', '{{ vault_init_dir }}/keys') }}"
+  no_log: not debug | default(true)
+
+- block:
+  - set_fact:
+      unseal: false
+
+  - name: Unseal vault
+    uri:
+      url: "{{ schema }}://{{ node_consul }}:8200/v1/sys/unseal"
+      method: PUT
+      body_format: json
+      body:
+        key: "{{ item }}"
+    register: unseal_response
+    no_log: not debug | default(true)
+    with_items:
+      - "{{ vault_unseal_keys | shuffle }}"
+    when: unseal_response is undefined or unseal_response.json.sealed
+
+  - name: Check vault sealed status
+    uri:
+      url: "{{ schema }}://{{ node_consul }}:8200/v1/sys/seal-status"
+    register: seal_status_response
+    failed_when: seal_status_response.json.sealed
+
+  when: not init_status_response.json.initialized or seal_status_response.json.sealed
+
+- name: Wait for vault leader election
+  uri:
+    url: "{{ schema }}://{{ vault_service_consul }}:8200/v1/sys/leader"
+  register: vault_leader_response
+  until: vault_leader_response.status == 200 and vault_leader_response.json.leader_address
+  retries: 10
+  run_once: true

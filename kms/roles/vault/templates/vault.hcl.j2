@@ -1,0 +1,8 @@
+backend "consul" {
+    token = "{{ acl_vault_token }}"
+}
+
+listener "tcp" {
+   address = "{{ vault_advertise_addr }}:8200"
+   tls_disable = true
+}

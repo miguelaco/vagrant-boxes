@@ -3,7 +3,7 @@
 - name: Lookup vault init data
   set_fact:
     vault_init_data: "{{ lookup('file', 'vault_init_data') }}"
-  no_log: yes
+  no_log: not debug | default(true)
   when: vault_init_data is not defined or vault_init_data.root_token is not defined
 
 - name: Set http schema

@@ -1,9 +1,0 @@
-backend "consul" {
-    token = "{{ acl_vault.ID }}"
-}
-
-listener "tcp" {
-{% set vault_addr = vault_advertise_addrs | intersect(ansible_all_ipv4_addresses) | first %}
-   address = "{{ vault_addr }}:8200"
-   tls_disable = true
-}

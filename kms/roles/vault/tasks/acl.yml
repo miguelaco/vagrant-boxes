@@ -1,0 +1,65 @@
+---
+
+- name: Lookup consul root_token file
+  set_fact:
+    consul_root_token: "{{ lookup('file', '{{ consul_init_dir }}/root_token') }}"
+  no_log: not debug | default(true)
+
+- name: Check acl_vault_token file
+  local_action: stat path={{ vault_init_dir }}/acl_vault_token
+  register: acl_vault_token_file
+  run_once: yes
+  become: no
+
+- name: Lookup acl_vault_token file
+  set_fact:
+    acl_vault_token: "{{ lookup('file', '{{ vault_init_dir }}/acl_vault_token') }}"
+  no_log: not debug | default(true)
+  when: acl_vault_token_file.stat.exists
+
+- name: Create vault ACL
+  uri:
+    url: http://{{ consul_service_consul }}:8500/v1/acl/create
+    method: PUT
+    headers:
+      X-Consul-Token: "{{ consul_root_token }}"
+    body_format: json
+    body:
+      Name: acl_vault_token
+      Type: client
+      Rules: "key \"vault/\" { policy = \"write\" } node \"\" { policy = \"write\" } service \"vault\" { policy = \"write\" } agent \"\" { policy = \"write\" } session \"\" { policy = \"write\" }"
+  register: acl_vault_token_response
+  no_log: not debug | default(true)
+  when: acl_vault_token is undefined
+  run_once: true
+
+- name: Update vault ACL
+  uri:
+    url: http://{{ consul_service_consul }}:8500/v1/acl/update
+    method: PUT
+    headers:
+      X-Consul-Token: "{{ consul_root_token }}"
+    body_format: json
+    body:
+      Id: "{{ acl_vault_token }}"
+      Name: acl_vault_token
+      Type: client
+      Rules: "key \"vault/\" { policy = \"write\" } node \"\" { policy = \"write\" } service \"vault\" { policy = \"write\" } agent \"\" { policy = \"write\" } session \"\" { policy = \"write\" }"
+  no_log: not debug | default(true)
+  when: acl_vault_token is defined
+  run_once: true
+
+- name: Save acl_vault_token
+  local_action:
+    copy
+      content={{ acl_vault_token_response.json.ID }}
+      dest={{ vault_init_dir }}/acl_vault_token
+  become: no
+  run_once: yes
+  when: acl_vault_token is undefined
+
+- name: Lookup acl_vault_token file
+  set_fact:
+    acl_vault_token: "{{ lookup('file', '{{ vault_init_dir }}/acl_vault_token') }}"
+  no_log: not debug | default(true)
+  when: acl_vault_token is undefined

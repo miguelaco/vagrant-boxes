@@ -1,6 +1,0 @@
----
-
-- { import_tasks: consul.yml, tags: [consul] }
-- { import_tasks: vault.yml, tags: [vault] }
-- { import_tasks: pki.yml, tags: [pki, vault] }
-- { import_tasks: securize.yml, tags: [securize] }

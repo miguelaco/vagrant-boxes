@@ -4,7 +4,7 @@
   - name: Lookup vault init data
     set_fact:
       vault_init_data: "{{ lookup('file', 'vault_init_data') }}"
-    no_log: yes
+    no_log: not debug | default(true)
     when: vault_init_data is not defined or vault_init_data.root_token is not defined
 
   - name: Set http schema
@@ -40,7 +40,7 @@
           common_name: consul.service.consul
           alt_names: "*.node.consul, *.node.dc1.consul, server.dc1.consul"
       register: cert
-      no_log: yes
+      no_log: not debug | default(true)
       run_once: true
 
     - name: Create consul secrets directory
@@ -60,7 +60,7 @@
         dest: "{{ item.dest }}"
         owner: consul
         group: consul
-      no_log: yes
+      no_log: not debug | default(true)
       with_items:
         - { dest: "{{ consul_home }}/secrets/ca.crt", content: "{{ cert.json.data.ca_chain | last }}" }
         - { dest: "{{ consul_home }}/secrets/server.cert.pem", content: "{{ ([cert.json.data.certificate] + cert.json.data.ca_chain) | join('\n') }}" }
@@ -115,7 +115,7 @@
           common_name: vault.service.consul
           alt_names: "active.vault.service.consul, standby.vault.service.consul, *.node.consul, *.node.dc1.consul"
       register: cert
-      no_log: yes
+      no_log: not debug | default(true)
       run_once: true
 
     - name: Create vault secrets directory
@@ -135,7 +135,7 @@
         dest: "{{ item.dest }}"
         owner: vault
         group: vault
-      no_log: yes
+      no_log: not debug | default(true)
       with_items:
         - { dest: "{{ vault_home }}/secrets/server.cert.pem", content: "{{ ([cert.json.data.certificate] + cert.json.data.ca_chain) | join('\n') }}" }
         - { dest: "{{ vault_home }}/secrets/server.key.pem", content: "{{ cert.json.data.private_key }}" }
@@ -147,7 +147,7 @@
     - name: Lookup consul init data
       set_fact:
         consul_init_data: "{{ lookup('file', 'consul_init_data') }}"
-      no_log: yes
+      no_log: not debug | default(true)
 
     - name: Check vault ACL
       uri:
@@ -155,12 +155,12 @@
         headers:
           X-Consul-Token: "{{ consul_init_data.ID }}"
       register: acls
-      no_log: yes
+      no_log: not debug | default(true)
       run_once: true
 
     - set_fact:
         acl_vault: "{{ acls.json | selectattr('Name', 'equalto', 'acl_vault_token') | list | first }}"
-      no_log: yes
+      no_log: not debug | default(true)
       when: acls.json | selectattr('Name', 'equalto', 'acl_vault_token') | list
 
     - name: Copy vault config file

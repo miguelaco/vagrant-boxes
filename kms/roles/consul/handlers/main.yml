@@ -10,9 +10,21 @@
 
 - name: Wait for consul leader election
   uri:
-    url: http://127.0.0.1:8500/v1/status/leader
+    url: http://{{ consul_service_consul }}:8500/v1/status/leader
   register: result
   until: result.status == 200 and result.json
   retries: 10
   run_once: true
   listen: Start consul service
+
+- name: Disable dnsmasq service
+  systemd:
+    name: dnsmasq
+    state: stopped
+    enabled: no
+    masked: yes
+
+- name: Start NetworkManager service
+  systemd:
+    name: NetworkManager
+    state: restarted

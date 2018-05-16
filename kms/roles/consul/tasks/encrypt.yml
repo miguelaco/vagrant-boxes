@@ -1,0 +1,27 @@
+---
+
+- name: Check encrypt file
+  local_action: stat path={{ consul_init_dir }}/encrypt
+  register: encrypt_file
+  run_once: yes
+  become: no
+
+- name: Generate encryption key
+  command: "{{ consul_home }}/bin/consul keygen"
+  register: keygen
+  run_once: yes
+  when: not encrypt_file.stat.exists
+
+- name: Save encryption key
+  local_action:
+    copy
+    content={{ keygen.stdout }}
+    dest={{ consul_init_dir }}/encrypt
+  become: no
+  run_once: yes
+  when: not encrypt_file.stat.exists
+
+- name: Lookup encrypt file
+  set_fact:
+    consul_encrypt: "{{ lookup('file', '{{ consul_init_dir }}/encrypt') }}"
+  no_log: not debug | default(true)
