@@ -2,6 +2,8 @@
 
 - hosts: all
   become: yes
+  vars:
+    consul_domain: kms
   roles:
     - { role: consul, tags: [ 'consul' ] }
     - { role: vault, tags: [ 'vault' ] }

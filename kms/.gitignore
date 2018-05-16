@@ -1,4 +1,4 @@
 consul*.zip
-consul_init_data
+.consul_init
 vault*.zip
-vault_init_data
+.vault_init

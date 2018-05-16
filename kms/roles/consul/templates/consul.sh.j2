@@ -1,2 +1,2 @@
-export PATH={{ consul_home }}/bin:${PATH}
-export VAULT_HOME={{ consul_home }}
+export CONSUL_HOME={{ consul_home }}
+[[ ":$PATH:" != *":${CONSUL_HOME}/bin:"* ]] && export PATH=${CONSUL_HOME}/bin:${PATH}

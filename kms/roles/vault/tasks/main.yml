@@ -46,9 +46,6 @@
     unarchive:
       src={{ role_path }}/files/vault_{{ vault_version }}_linux_amd64.zip
       dest={{ vault_home }}/bin
-      owner=vault
-      group=vault
-      mode=0755
     notify:
       - Start vault service
 

@@ -60,9 +60,6 @@
   unarchive:
     src={{ role_path }}/files/consul_{{ consul_version }}_linux_amd64.zip
     dest={{ consul_home }}/bin
-    owner=consul
-    group=consul
-    mode=0755
   notify:
     - Start consul service
 
