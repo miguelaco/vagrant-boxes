@@ -20,13 +20,13 @@
     dest: /home/vagrant/genconf/config.yaml
     content: |
       ---
-      bootstrap_url: http://{{ hostvars['boot'].detected_ipv4 }}:8080
+      bootstrap_url: http://{{ hostvars['boot'].advertise_addr }}:8080
       cluster_name: {{ cluster_name }}
       exhibitor_storage_backend: static
       master_discovery: static
       master_list:
       {% for host in groups['masters'] %}
-      - {{ hostvars[host]['detected_ipv4'] }}
+      - {{ hostvars[host]['advertise_addr'] }}
       {% endfor %}
       resolvers:
       {% for host in dns_resolvers %}
@@ -51,6 +51,6 @@
     name: nginx-bootstrap
     image: nginx
     ports:
-      - "{{ hostvars['boot'].detected_ipv4 }}:8080:80"
+      - "{{ hostvars['boot'].advertise_addr }}:8080:80"
     volumes:
       - /home/vagrant/genconf/serve:/usr/share/nginx/html

@@ -32,11 +32,11 @@
   command: /usr/local/bin/ip-detect
   register: ip_detect_result
 
-- name: Register fact with detected ip
+- name: Register advertise_addr fact
   set_fact:
-    detected_ipv4: "{{ ip_detect_result.stdout }}"
+    advertise_addr: "{{ ip_detect_result.stdout }}"
 
-- debug: msg="Detected ip for node is {{ detected_ipv4 }}"
+- debug: msg="Detected ip for node is {{ advertise_addr }}"
 
 - name: Disabling SELinux (anti-pattern)
   selinux:

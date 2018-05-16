@@ -17,12 +17,10 @@ Vagrant.configure("2") do |config|
           ansible.verbose = true
           ansible.host_vars = {
             "sd1" => {
-              "consul_advertise_addr" => "192.168.77.21",
-              "vault_advertise_addr" => "192.168.77.21"
+              "advertise_addr" => "192.168.77.21"
             },
             "sd2" => {
-              "consul_advertise_addr" => "192.168.77.22",
-              "vault_advertise_addr" => "192.168.77.22"
+              "advertise_addr" => "192.168.77.22"
             }
           }
 #          ansible.tags = [ "vault" ]

@@ -11,6 +11,7 @@
   become: yes
   roles:
     - { role: consul, tags: [ 'consul', 'kms' ] }
+    - { role: vault, tags: [ 'vault', 'kms' ] }
 
 - hosts: bootstrap
   become: yes

@@ -3,6 +3,6 @@ backend "consul" {
 }
 
 listener "tcp" {
-   address = "{{ vault_advertise_addr }}:8200"
+   address = "{{ advertise_addr }}:8200"
    tls_disable = true
 }

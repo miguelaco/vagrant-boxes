@@ -1,8 +1,8 @@
-{% set consul_advertise_addr = consul_advertise_addrs | intersect(ansible_all_ipv4_addresses) | first %}
+{% set advertise_addr = consul_advertise_addrs | intersect(ansible_all_ipv4_addresses) | first %}
 {% set consul_join_addrs = consul_advertise_addrs | difference(ansible_all_ipv4_addresses) %}
 {
   "addresses": {
-    "https": "{{ consul_advertise_addr }}"
+    "https": "{{ advertise_addr }}"
   },
   "ports": {
     "https": 8500

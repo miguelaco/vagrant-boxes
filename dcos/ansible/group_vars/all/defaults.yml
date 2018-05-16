@@ -1,6 +1,12 @@
 ---
 
 cluster_name: eos
+domain: eos
+consul_domain: "{{ domain }}"
+node_consul: "{{ inventory_hostname_short }}.node.{{ consul_domain }}"
+consul_service_consul: consul.service.{{ consul_domain }}
+vault_service_consul: vault.service.{{ consul_domain }}
+debug: yes
 
 dns_resolvers:
   - 8.8.8.8
