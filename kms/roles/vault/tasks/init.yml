@@ -45,14 +45,19 @@
   register: seal_status_response
   when: init_status_response.json.initialized
 
-- name: Lookup vault unseal keys
+- name: Lookup root_token file
   set_fact:
-    vault_unseal_keys: "{{ lookup('file', '{{ vault_init_dir }}/keys') }}"
+    vault_root_token: "{{ lookup('file', '{{ vault_init_dir }}/root_token') }}"
   no_log: not debug | default(true)
 
 - block:
+  - name: Lookup vault unseal keys
+    set_fact:
+      vault_unseal_keys: "{{ lookup('file', '{{ vault_init_dir }}/keys') }}"
+    no_log: not debug | default(true)
+
   - set_fact:
-      unseal: false
+      unseal_response: false
 
   - name: Unseal vault
     uri:
@@ -65,7 +70,7 @@
     no_log: not debug | default(true)
     with_items:
       - "{{ vault_unseal_keys | shuffle }}"
-    when: unseal_response is undefined or unseal_response.json.sealed
+    when: not unseal_response or unseal_response.json.sealed
 
   - name: Check vault sealed status
     uri:
