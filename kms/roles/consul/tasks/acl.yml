@@ -2,7 +2,7 @@
 
 - name: Bootstrap ACL system
   uri:
-    url: http://{{ consul_service_consul }}:8500/v1/acl/bootstrap
+    url: http://{{ advertise_addr }}:8500/v1/acl/bootstrap
     method: PUT
     status_code: 200, 403
   register: root_token
@@ -25,7 +25,7 @@
 
 - name: Create agent ACL
   uri:
-    url: http://{{ consul_service_consul }}:8500/v1/acl/create
+    url: http://{{ advertise_addr }}:8500/v1/acl/create
     method: PUT
     headers:
       X-Consul-Token: "{{ consul_root_token }}"
@@ -41,7 +41,7 @@
 
 - name: Update agent ACL
   uri:
-    url: http://{{ consul_service_consul }}:8500/v1/acl/update
+    url: http://{{ advertise_addr }}:8500/v1/acl/update
     method: PUT
     headers:
       X-Consul-Token: "{{ consul_root_token }}"
@@ -83,7 +83,7 @@
 
 - name: Anonymous ACL
   uri:
-    url: http://{{ consul_service_consul }}:8500/v1/acl/update
+    url: http://{{ advertise_addr }}:8500/v1/acl/update
     method: PUT
     headers:
       X-Consul-Token: "{{ consul_root_token }}"

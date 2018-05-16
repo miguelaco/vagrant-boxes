@@ -1,6 +1,7 @@
 Vagrant.configure("2") do |config|
   N = 2
   (1..N).each do |machine_id|
+    config.ssh.insert_key = false
     config.vm.box = "bento/centos-7"
     config.vm.define "sd#{machine_id}" do |machine|
       machine.vm.hostname = "sd#{machine_id}"
