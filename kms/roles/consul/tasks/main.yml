@@ -20,7 +20,7 @@
     - "{{ consul_home }}"
     - "{{ consul_home }}/bin"
 
-- name: Create consul data dir
+- name: Create consul data and config dir
   file:
     path: "{{ item }}"
     state: directory
@@ -29,7 +29,16 @@
     mode: 0755
   with_items:
     - "{{ consul_data_dir }}"
+    - "{{ consul_secrets_dir }}"
     - "{{ consul_config_dir }}"
+
+- name: Create consul secrets dir
+  file:
+    path: "{{ consul_secrets_dir }}"
+    state: directory
+    owner: consul
+    group: consul
+    mode: 0700
 
 - name: Create consul init directory
   local_action: file path={{ consul_init_dir }} state=directory
@@ -78,6 +87,9 @@
   no_log: not debug | default(true)
   when: acl_agent_token_file.stat.exists
 
+- name: Setup self signed cert
+  import_tasks: self-signed.yml
+
 - name: Copy consul config file
   template:
     src={{ item.src }}
@@ -107,7 +119,7 @@
 
 - name: Wait for consul leader election
   uri:
-    url: http://{{ consul_service_consul }}:8500/v1/status/leader
+    url: https://{{ consul_service_consul }}:8500/v1/status/leader
   register: result
   until: result.status == 200 and result.json
   retries: 10

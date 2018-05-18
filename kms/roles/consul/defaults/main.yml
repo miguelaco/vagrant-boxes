@@ -11,6 +11,7 @@ consul_node_name: "{{ inventory_hostname_short }}"
 consul_domain: consul
 consul_datacenter: dc1
 node_consul: "{{ inventory_hostname_short }}.node.{{ consul_domain }}"
+node_consul_long: "{{ inventory_hostname_short }}.node.{{ consul_datacenter }}.{{ consul_domain }}"
 consul_service_consul: consul.service.{{ consul_domain }}
 vault_service_consul: vault.service.{{ consul_domain }}
 vault_init_dir: "{{ playbook_dir }}/.vault_init"
