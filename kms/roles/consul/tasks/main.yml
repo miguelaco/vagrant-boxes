@@ -14,31 +14,22 @@
 
 - name: Create consul home dir
   file:
-    path: "{{ item }}"
-    state: directory
+    path={{ item }}
+    state=directory
   with_items:
     - "{{ consul_home }}"
     - "{{ consul_home }}/bin"
 
 - name: Create consul data and config dir
   file:
-    path: "{{ item }}"
-    state: directory
-    owner: consul
-    group: consul
-    mode: 0755
+    path={{ item }}
+    state=directory
+    owner=consul
+    group=consul
+    mode=0755
   with_items:
     - "{{ consul_data_dir }}"
-    - "{{ consul_secrets_dir }}"
     - "{{ consul_config_dir }}"
-
-- name: Create consul secrets dir
-  file:
-    path: "{{ consul_secrets_dir }}"
-    state: directory
-    owner: consul
-    group: consul
-    mode: 0700
 
 - name: Create consul init directory
   local_action: file path={{ consul_init_dir }} state=directory
@@ -71,6 +62,7 @@
     dest={{ consul_home }}/bin
   notify:
     - Start consul service
+    - Wait for consul leader election
 
 - name: Setup encryption key
   import_tasks: encrypt.yml
@@ -87,8 +79,18 @@
   no_log: not debug | default(true)
   when: acl_agent_token_file.stat.exists
 
-- name: Setup self signed cert
-  import_tasks: self-signed.yml
+- name: Check consul certificates
+  stat:
+    path: "{{ item }}"
+  register: consul_certs
+  with_items:
+    - "{{ consul_secrets_dir }}/ca.crt"
+    - "{{ consul_secrets_dir }}/server.cert.pem"
+    - "{{ consul_secrets_dir }}/server.key.pem"
+
+- name: Set protocol schema
+  set_fact:
+    consul_schema: "{{ (consul_certs.results | rejectattr('stat.exists') | list | length > 0 or consul_reset_tls) | ternary('http', 'https') }}"
 
 - name: Copy consul config file
   template:
@@ -102,6 +104,7 @@
     - { src: "consul.systemd.j2", dest: "/etc/systemd/system/consul.service", mode: "0644" }
   notify:
     - Start consul service
+    - Wait for consul leader election
 
 - name: Set consul env variables
   template:
@@ -116,11 +119,3 @@
   import_tasks: acl.yml
 
 - meta: flush_handlers
-
-- name: Wait for consul leader election
-  uri:
-    url: https://{{ consul_service_consul }}:8500/v1/status/leader
-  register: result
-  until: result.status == 200 and result.json
-  retries: 10
-  run_once: true

@@ -16,4 +16,5 @@
     - import_role:
         name: consul
         tasks_from: tls
+      when: consul_schema == 'http'
       tags: ['tls']

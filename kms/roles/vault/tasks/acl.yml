@@ -19,7 +19,7 @@
 
 - name: Create vault ACL
   uri:
-    url: http://{{ consul_service_consul }}:8500/v1/acl/create
+    url: http://127.0.0.1:8500/v1/acl/create
     method: PUT
     headers:
       X-Consul-Token: "{{ consul_root_token }}"
@@ -35,7 +35,7 @@
 
 - name: Update vault ACL
   uri:
-    url: http://{{ consul_service_consul }}:8500/v1/acl/update
+    url: http://127.0.0.1:8500/v1/acl/update
     method: PUT
     headers:
       X-Consul-Token: "{{ consul_root_token }}"

@@ -1,52 +1,77 @@
 ---
 
-- stat: path={{ consul_secrets_dir }}/vault.serial
-  register: vault_serial_result
+# curl -XPOST -H "X-Vault-Token: fc6620f7-41a8-cdbb-030e-6a9deb70d819" https://vault.service.consul:8200/v1/pki/roles/consul -d '{"allowed_domains": ["consul"], "allow_subdomains": true}'
+- name: Create consul role
+  uri:
+    url: "{{ schema }}://{{ vault_service_consul }}:8200/v1/pki_int/roles/consul"
+    method: POST
+    status_code: 200, 204
+    headers:
+      X-Vault-Token: "{{ vault_root_token }}"
+    body_format: json
+    body:
+      allowed_domains: "{{ consul_domain }}"
+      allow_subdomains: true
+  run_once: true
 
-- block:
-  # curl -XPOST -H "X-Vault-Token: fc6620f7-41a8-cdbb-030e-6a9deb70d819" https://vault.service.consul:8200/v1/pki/roles/consul -d '{"allowed_domains": ["consul"], "allow_subdomains": true}'
-  - name: Create consul role
-    uri:
-      url: "{{ schema }}://{{ vault_service_consul }}:8200/v1/pki/roles/consul"
-      method: POST
-      status_code: 200, 204
-      headers:
-        X-Vault-Token: "{{ vault_root_token }}"
-      body_format: json
-      body:
-        allowed_domains: "{{ consul_domain }}"
-        allow_subdomains: true
-    run_once: true
+# curl -XPOST -H "X-Vault-Token: fc6620f7-41a8-cdbb-030e-6a9deb70d819" https://vault.service.consul:8200/v1/pki/issue/consul -d '{"common_name": "vault.service.consul", "alt_names": "active.vault.service.consul, standby.vault.service.consul, *.node.consul"}'
+- name: Create consul cert
+  uri:
+    url: "{{ schema }}://{{ vault_service_consul }}:8200/v1/pki_int/issue/consul"
+    method: POST
+    status_code: 200, 204
+    headers:
+      X-Vault-Token: "{{ vault_root_token }}"
+    body_format: json
+    body:
+      common_name: "{{ consul_service_consul }}"
+      alt_names: "*.node.{{ consul_domain }}, *.node.{{ consul_datacenter }}.{{ consul_domain }}, server.{{ consul_datacenter }}.{{ consul_domain }}"
+      ttl: "21900h"
+  register: cert
+  no_log: not debug | default(true)
+  run_once: true
 
-  # curl -XPOST -H "X-Vault-Token: fc6620f7-41a8-cdbb-030e-6a9deb70d819" https://vault.service.consul:8200/v1/pki/issue/consul -d '{"common_name": "vault.service.consul", "alt_names": "active.vault.service.consul, standby.vault.service.consul, *.node.consul"}'
-  - name: Create consul cert
-    uri:
-      url: "{{ schema }}://{{ vault_service_consul }}:8200/v1/pki/issue/consul"
-      method: POST
-      status_code: 200, 204
-      headers:
-        X-Vault-Token: "{{ vault_root_token }}"
-      body_format: json
-      body:
-        common_name: "{{ consul_service_consul }}"
-        alt_names: "*.node.{{ consul_domain }}, *.node.{{ consul_datacenter }}.{{ consul_domain }}, server.{{ consul_datacenter }}.{{ consul_domain }}"
-    register: cert
-    no_log: not debug | default(true)
-    run_once: true
+- name: Create consul secrets directory
+  file:
+    path: "{{ consul_secrets_dir }}"
+    state: directory
+    owner: consul
+    group: consul
+    mode: 0700
 
-  - name: Copy consul cert
-    copy:
-      content: "{{ item.content }}"
-      dest: "{{ item.dest }}"
-      owner: consul
-      group: consul
-    no_log: not debug | default(true)
-    with_items:
-      - { dest: "{{ consul_secrets_dir }}/ca.crt", content: "{{ cert.json.data.ca_chain | last }}" }
-      - { dest: "{{ consul_secrets_dir }}/server.cert.pem", content: "{{ ([cert.json.data.certificate] + cert.json.data.ca_chain) | join('\n') }}" }
-      - { dest: "{{ consul_secrets_dir }}/server.key.pem", content: "{{ cert.json.data.private_key }}" }
-      - { dest: "{{ consul_secrets_dir }}/vault.serial", content: "{{ cert.json.data.serial_number }}" }
-    notify:
-      - Start consul service
+- name: Copy consul cert
+  copy:
+    content: "{{ item.content }}"
+    dest: "{{ item.dest }}"
+    owner: consul
+    group: consul
+  no_log: not debug | default(true)
+  with_items:
+    - { dest: "{{ consul_secrets_dir }}/ca.crt", content: "{{ cert.json.data.ca_chain | last }}" }
+    - { dest: "{{ consul_secrets_dir }}/server.cert.pem", content: "{{ ([cert.json.data.certificate] + cert.json.data.ca_chain) | join('\n') }}" }
+    - { dest: "{{ consul_secrets_dir }}/server.key.pem", content: "{{ cert.json.data.private_key }}" }
+    - { dest: "{{ consul_secrets_dir }}/vault.serial", content: "{{ cert.json.data.serial_number }}" }
+  notify:
+    - Start consul service
+    - Wait for consul leader election
 
-  when: not vault_serial_result.stat.exists
+- name: Set protocol schema
+  set_fact:
+    consul_schema: "https"
+
+- name: Copy consul config file
+  template:
+    src={{ item.src }}
+    dest={{ item.dest }}
+    owner=consul
+    group=consul
+    mode={{ item.mode }}
+  with_items:
+    - { src: "consul.json.j2", dest: "{{ consul_config_file }}", mode: "0600" }
+    - { src: "consul.systemd.j2", dest: "/etc/systemd/system/consul.service", mode: "0644" }
+  notify:
+    - Start consul service
+    - Wait for consul leader election
+
+- meta: flush_handlers
+

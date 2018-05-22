@@ -80,6 +80,7 @@
   when: acl_agent_token_response is not skipped
   notify:
     - Start consul service
+    - Wait for consul leader election
 
 - name: Anonymous ACL
   uri:

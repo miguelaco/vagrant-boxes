@@ -1,10 +1,6 @@
 ---
 
-- name: Set http schema
-  set_fact:
-    schema: "{{ vault_tls_enabled | default(false) | ternary('https', 'http') }}"
-
-- name: Check pki backend
+- name: Check mounts
   uri:
     url: "{{ schema }}://{{ vault_service_consul }}:8200/v1/sys/mounts"
     method: GET
@@ -25,12 +21,14 @@
     body_format: json
     body:
       type: pki
+      config:
+        max_lease_ttl: "87600h"
   run_once: true
   when: mounts.json['pki/'] is not defined
 
-- name: Upload ca bundle
+- name: Generate root ca
   uri:
-    url: "{{ schema }}://{{ vault_service_consul }}:8200/v1/pki/config/ca"
+    url: "{{ schema }}://{{ vault_service_consul }}:8200/v1/pki/root/generate/internal"
     method: POST
     validate_certs: no
     status_code: 200, 204
@@ -38,5 +36,104 @@
       X-Vault-Token: "{{ vault_root_token }}"
     body_format: json
     body:
-      pem_bundle: "{{ lookup('file', '{{ role_path }}/files/pki.pem') }}"
+      common_name: "{{ vault_service_consul }}"
+      exclude_cn_from_sans: yes
+      ttl: "87600h"
+  register: root
   run_once: true
+
+- name: Copy ca cert
+  copy:
+    content: "{{ root.json.data.certificate }}"
+    dest: /etc/pki/ca-trust/source/anchors/ca.crt
+    owner: vault
+    group: vault
+  no_log: not debug | default(true)
+  when: root.json is defined
+  notify:
+    - Update CA certificates
+
+- name: Mount pki_int backend
+  uri:
+    url: "{{ schema }}://{{ vault_service_consul }}:8200/v1/sys/mounts/pki_int"
+    method: POST
+    validate_certs: no
+    status_code: 200, 204
+    headers:
+      X-Vault-Token: "{{ vault_root_token }}"
+    body_format: json
+    body:
+      type: pki
+      config:
+        max_lease_ttl: "43800h"
+  run_once: true
+  when: mounts.json['pki_int/'] is not defined
+
+- name: Generate intermediate ca
+  uri:
+    url: "{{ schema }}://{{ vault_service_consul }}:8200/v1/pki_int/intermediate/generate/internal"
+    method: POST
+    validate_certs: no
+    status_code: 200, 204
+    headers:
+      X-Vault-Token: "{{ vault_root_token }}"
+    body_format: json
+    body:
+      common_name: "{{ vault_service_consul }} intermediate CA"
+      exclude_cn_from_sans: yes
+      ttl: "43800h"
+  register: intermediate_csr
+  run_once: true
+
+- name: Sign intermediate ca
+  uri:
+    url: "{{ schema }}://{{ vault_service_consul }}:8200/v1/pki/root/sign-intermediate"
+    method: POST
+    validate_certs: no
+    status_code: 200, 204
+    headers:
+      X-Vault-Token: "{{ vault_root_token }}"
+    body_format: json
+    body:
+      csr: "{{ intermediate_csr.json.data.csr }}"
+      ttl: "43800h"
+  register: intermediate
+  run_once: true
+
+- name: Get root ca
+  uri:
+    url: "{{ schema }}://{{ vault_service_consul }}:8200/v1/pki/cert/ca"
+    validate_certs: no
+    status_code: 200, 204
+  register: root
+  run_once: true
+
+- debug: msg="{{ intermediate.json.data.certificate}}\n{{ root.json.data.certificate }}"
+
+- name: Set signed intermediate ca
+  uri:
+    url: "{{ schema }}://{{ vault_service_consul }}:8200/v1/pki_int/intermediate/set-signed"
+    method: POST
+    validate_certs: no
+    status_code: 200, 204
+    headers:
+      X-Vault-Token: "{{ vault_root_token }}"
+    body_format: json
+    body:
+      certificate: "{{ intermediate.json.data.certificate}}\n{{ root.json.data.certificate }}"
+      common_name: "{{ vault_service_consul }} intermediate CA"
+  register: intermediate
+  run_once: true
+
+#- name: Upload ca bundle
+#  uri:
+#    url: "{{ schema }}://{{ vault_service_consul }}:8200/v1/pki/config/ca"
+#    method: POST
+#    validate_certs: no
+#    status_code: 200, 204
+#    headers:
+#      X-Vault-Token: "{{ vault_root_token }}"
+#    body_format: json
+#    body:
+#      pem_bundle: "{{ lookup('file', '{{ role_path }}/files/pki.pem') }}"
+#  run_once: true
