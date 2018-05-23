@@ -74,4 +74,3 @@
     - Wait for consul leader election
 
 - meta: flush_handlers
-

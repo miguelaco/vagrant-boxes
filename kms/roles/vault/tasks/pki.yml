@@ -26,32 +26,43 @@
   run_once: true
   when: mounts.json['pki/'] is not defined
 
-- name: Generate root ca
+- name: Get root ca
   uri:
-    url: "{{ schema }}://{{ vault_service_consul }}:8200/v1/pki/root/generate/internal"
-    method: POST
+    url: "{{ schema }}://{{ vault_service_consul }}:8200/v1/pki/cert/ca"
     validate_certs: no
-    status_code: 200, 204
-    headers:
-      X-Vault-Token: "{{ vault_root_token }}"
-    body_format: json
-    body:
-      common_name: "{{ vault_service_consul }}"
-      exclude_cn_from_sans: yes
-      ttl: "87600h"
-  register: root
+    status_code: 200, 404
+  register: root_check
   run_once: true
 
-- name: Copy ca cert
-  copy:
-    content: "{{ root.json.data.certificate }}"
-    dest: /etc/pki/ca-trust/source/anchors/ca.crt
-    owner: vault
-    group: vault
-  no_log: not debug | default(true)
-  when: root.json is defined
-  notify:
-    - Update CA certificates
+- block:
+  - name: Generate root ca
+    uri:
+      url: "{{ schema }}://{{ vault_service_consul }}:8200/v1/pki/root/generate/internal"
+      method: POST
+      validate_certs: no
+      status_code: 200, 204
+      headers:
+        X-Vault-Token: "{{ vault_root_token }}"
+      body_format: json
+      body:
+        common_name: "{{ vault_service_consul }}"
+        exclude_cn_from_sans: yes
+        ttl: "87600h"
+    register: root
+    run_once: true
+
+  - name: Copy ca cert
+    copy:
+      content: "{{ root.json.data.certificate }}"
+      dest: /etc/pki/ca-trust/source/anchors/ca.crt
+      owner: vault
+      group: vault
+    no_log: not debug | default(true)
+    when: root.json is defined
+    notify:
+      - Update CA certificates
+
+  when: root_check.status == 404
 
 - name: Mount pki_int backend
   uri:
@@ -69,71 +80,59 @@
   run_once: true
   when: mounts.json['pki_int/'] is not defined
 
-- name: Generate intermediate ca
+- name: Get intermediate ca
   uri:
-    url: "{{ schema }}://{{ vault_service_consul }}:8200/v1/pki_int/intermediate/generate/internal"
-    method: POST
+    url: "{{ schema }}://{{ vault_service_consul }}:8200/v1/pki_int/cert/ca"
     validate_certs: no
-    status_code: 200, 204
-    headers:
-      X-Vault-Token: "{{ vault_root_token }}"
-    body_format: json
-    body:
-      common_name: "{{ vault_service_consul }} intermediate CA"
-      exclude_cn_from_sans: yes
-      ttl: "43800h"
-  register: intermediate_csr
+    status_code: 200, 404
+  register: intermediate_check
   run_once: true
 
-- name: Sign intermediate ca
-  uri:
-    url: "{{ schema }}://{{ vault_service_consul }}:8200/v1/pki/root/sign-intermediate"
-    method: POST
-    validate_certs: no
-    status_code: 200, 204
-    headers:
-      X-Vault-Token: "{{ vault_root_token }}"
-    body_format: json
-    body:
-      csr: "{{ intermediate_csr.json.data.csr }}"
-      ttl: "43800h"
-  register: intermediate
-  run_once: true
+- block:
+  - name: Generate intermediate ca
+    uri:
+      url: "{{ schema }}://{{ vault_service_consul }}:8200/v1/pki_int/intermediate/generate/internal"
+      method: POST
+      validate_certs: no
+      status_code: 200, 204
+      headers:
+        X-Vault-Token: "{{ vault_root_token }}"
+      body_format: json
+      body:
+        common_name: "{{ vault_service_consul }} intermediate CA"
+    register: intermediate_csr
+    run_once: true
 
-- name: Get root ca
-  uri:
-    url: "{{ schema }}://{{ vault_service_consul }}:8200/v1/pki/cert/ca"
-    validate_certs: no
-    status_code: 200, 204
-  register: root
-  run_once: true
+  - name: Sign intermediate ca
+    uri:
+      url: "{{ schema }}://{{ vault_service_consul }}:8200/v1/pki/root/sign-intermediate"
+      method: POST
+      validate_certs: no
+      status_code: 200, 204
+      headers:
+        X-Vault-Token: "{{ vault_root_token }}"
+      body_format: json
+      body:
+        csr: "{{ intermediate_csr.json.data.csr }}"
+        ttl: "43800h"
+    register: intermediate
+    run_once: true
 
-- debug: msg="{{ intermediate.json.data.certificate}}\n{{ root.json.data.certificate }}"
+  - name: Set signed intermediate ca
+    uri:
+      url: "{{ schema }}://{{ vault_service_consul }}:8200/v1/pki_int/intermediate/set-signed"
+      method: POST
+      validate_certs: no
+      status_code: 200, 204
+      headers:
+        X-Vault-Token: "{{ vault_root_token }}"
+      body_format: json
+      body:
+        certificate: "{{ intermediate.json.data.certificate}}\n{{ intermediate.json.data.issuing_ca }}"
+        common_name: "{{ vault_service_consul }} intermediate CA"
+    register: intermediate
+    run_once: true
 
-- name: Set signed intermediate ca
-  uri:
-    url: "{{ schema }}://{{ vault_service_consul }}:8200/v1/pki_int/intermediate/set-signed"
-    method: POST
-    validate_certs: no
-    status_code: 200, 204
-    headers:
-      X-Vault-Token: "{{ vault_root_token }}"
-    body_format: json
-    body:
-      certificate: "{{ intermediate.json.data.certificate}}\n{{ root.json.data.certificate }}"
-      common_name: "{{ vault_service_consul }} intermediate CA"
-  register: intermediate
-  run_once: true
+  when: intermediate_check.status == 404
 
-#- name: Upload ca bundle
-#  uri:
-#    url: "{{ schema }}://{{ vault_service_consul }}:8200/v1/pki/config/ca"
-#    method: POST
-#    validate_certs: no
-#    status_code: 200, 204
-#    headers:
-#      X-Vault-Token: "{{ vault_root_token }}"
-#    body_format: json
-#    body:
-#      pem_bundle: "{{ lookup('file', '{{ role_path }}/files/pki.pem') }}"
-#  run_once: true
+- meta: flush_handlers
