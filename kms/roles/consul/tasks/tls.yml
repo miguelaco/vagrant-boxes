@@ -57,7 +57,7 @@
 
 - name: Set protocol schema
   set_fact:
-    consul_schema: "https"
+    consul_schema: https
 
 - name: Copy consul config file
   template:
