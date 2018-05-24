@@ -13,7 +13,7 @@
 {% if consul_join_addrs | length > 0 %}
   "retry_join": [ "{{ consul_join_addrs | join('", "') }}" ],
 {% endif %}
-{% if consul_schema == 'https' %}
+{% if consul_cert_serial_number is defined %}
   "addresses": {
     "https": "{{ advertise_addr }}"
   },

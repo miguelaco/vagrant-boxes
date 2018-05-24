@@ -79,18 +79,17 @@
   no_log: not debug | default(true)
   when: acl_agent_token_file.stat.exists
 
-- name: Check consul certificates
-  stat:
-    path: "{{ item }}"
-  register: consul_certs
-  with_items:
-    - "{{ consul_secrets_dir }}/ca.crt"
-    - "{{ consul_secrets_dir }}/server.cert.pem"
-    - "{{ consul_secrets_dir }}/server.key.pem"
+- name: Check cert serial number file
+  local_action: stat path={{ consul_init_dir }}/cert_serial_number
+  register: consul_cert_serial_number_result
+  run_once: yes
+  become: no
 
-- name: Set protocol schema
+- name: Lookup cert serial number file
   set_fact:
-    consul_schema: "{{ (consul_certs.results | rejectattr('stat.exists') | list | length > 0 or consul_reset_tls) | ternary('http', 'https') }}"
+    consul_cert_serial_number: "{{ lookup('file', '{{ consul_init_dir }}/cert_serial_number') }}"
+  no_log: not debug | default(true)
+  when: consul_cert_serial_number_result.stat.exists
 
 - name: Copy consul config file
   template:

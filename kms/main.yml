@@ -5,16 +5,15 @@
   vars:
     consul_domain: kms
   tasks:
-    - include_role:
+    - import_role:
         name: consul
-      tags: ['consul']
+      tags: [ "consul" ]
 
-    - include_role:
+    - import_role:
         name: vault
-      tags: ['vault']
+      tags: [ "vault" ]
 
-    - include_role:
+    - import_role:
         name: consul
         tasks_from: tls
-      when: consul_schema != 'https'
-      tags: ['tls']
+      tags: [ "consul", "tls" ]

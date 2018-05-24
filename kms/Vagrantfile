@@ -24,7 +24,7 @@ Vagrant.configure("2") do |config|
               "advertise_addr" => "192.168.77.22"
             }
           }
-#          ansible.tags = [ "vault" ]
+#          ansible.tags = [ "consul" ]
         end
       end
     end
