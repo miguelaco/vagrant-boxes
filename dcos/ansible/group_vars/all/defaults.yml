@@ -28,7 +28,7 @@ system_packages:
 #  - vim
 #  - tree
   - ntp
-#  - net-tools
+  - net-tools
   - bind-utils
   - xz
   - unzip

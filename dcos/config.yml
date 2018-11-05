@@ -5,18 +5,16 @@ m1:
   type: [ master, kms ]
 a1:
   ip: 192.168.65.30
-  cpus: 4
-  memory: 6144
-  memory-reserved: 512
+  cpus: 2
+  memory: 2048
   type: agent-private
 p1:
   ip: 192.168.65.40
   cpus: 2
-  memory: 1536
-  memory-reserved: 512
+  memory: 1024
   type: agent-public
 boot:
   ip: 192.168.65.10
-  cpus: 2
+  cpus: 1
   memory: 1024
   type: boot

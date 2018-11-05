@@ -1,9 +1,11 @@
 machine_types = YAML.load_file(Pathname.new('config.yml').realpath)
 
 Vagrant.configure("2") do |config|
+  config.hostmanager.enabled = true
+  config.hostmanager.manage_host = true
   config.ssh.insert_key = false
   machine_types.each do |name, machine_type|
-    config.vm.box = "bento/centos-7"
+    config.vm.box = "centos/7"
     config.vm.define name do |machine|
       machine.vm.hostname = "#{name}.dcos"
       machine.vm.network "private_network", ip: machine_type['ip']
@@ -25,7 +27,7 @@ Vagrant.configure("2") do |config|
           ansible.inventory_path = "ansible/inventory.py"
           ansible.config_file = "ansible/ansible.cfg"
           ansible.verbose = true
-#          ansible.tags = [ "kms" ]
+          ansible.tags = [ "dcos" ]
         end
       end
     end

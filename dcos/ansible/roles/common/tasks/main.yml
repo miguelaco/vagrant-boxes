@@ -9,9 +9,7 @@
     msg: "Please install at least ansible 2.5.x.x in your host"
 
 - name: Install prerequisites
-  yum: name={{ item }} state=latest
-  with_items:
-    - "{{ system_packages }}"
+  yum: name={{ system_packages }} state=latest
 
 #- name: Install CentOS EPEL prerequisites
 #  yum: name={{ item }} state=latest
@@ -25,7 +23,7 @@
       #!/usr/bin/env bash
       set -o nounset -o errexit
       export PATH=/usr/sbin:/usr/bin:$PATH
-      echo $(ip addr show enp0s8 | grep -Eo '[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}' | head -1)
+      echo $(ip addr show eth1 | grep -Eo '[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}' | head -1)
     mode: 0700
 
 - name: Execute ip-detect on all nodes
@@ -35,8 +33,6 @@
 - name: Register advertise_addr fact
   set_fact:
     advertise_addr: "{{ ip_detect_result.stdout }}"
-
-- debug: msg="Detected ip for node is {{ advertise_addr }}"
 
 - name: Disabling SELinux (anti-pattern)
   selinux:
