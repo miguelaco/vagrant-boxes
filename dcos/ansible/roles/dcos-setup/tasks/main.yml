@@ -1,10 +1,24 @@
 ---
 
+- name: Check if there is a local dcos_generate_config.sh
+  local_action: stat path={{ role_path }}/files/dcos_generate_config.sh
+  become: no
+  register: dcos_generate_config_local
+
+- name: Copy dcos_generate_config.sh from local
+  copy:
+    src: "{{ role_path }}/files/dcos_generate_config.sh"
+    dest: /home/vagrant
+    force: no
+    checksum: 2993625ac75fb0766dcd3d9db288ff6f059a5ce5 
+  when: dcos_generate_config_local.stat is defined and dcos_generate_config_local.stat.exists
+
 - name: Download dcos_generate_config.sh
   get_url:
     url=https://downloads.dcos.io/dcos/stable/1.12.0/dcos_generate_config.sh
     dest=/home/vagrant/dcos_generate_config.sh
     checksum=sha256:d40cf41b3d56d85774669cde5d497038eb461165be9e4ae8368c801e7b0a021f
+  when: dcos_generate_config_local.stat is not defined or not dcos_generate_config_local.stat.exists
 
 - name: Create genconf dir
   file: path=/home/vagrant/genconf state=directory

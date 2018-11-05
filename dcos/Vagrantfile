@@ -1,19 +1,31 @@
 machine_types = YAML.load_file(Pathname.new('config.yml').realpath)
 
 Vagrant.configure("2") do |config|
-  config.hostmanager.enabled = true
-  config.hostmanager.manage_host = true
+
+  if Vagrant.has_plugin?('vagrant-hostmanager')
+    config.hostmanager.enabled = false
+    config.hostmanager.manage_host = true
+    config.hostmanager.manage_guest = true
+  end
+
   config.ssh.insert_key = false
   machine_types.each do |name, machine_type|
     config.vm.box = "centos/7"
     config.vm.define name do |machine|
       machine.vm.hostname = "#{name}.dcos"
       machine.vm.network "private_network", ip: machine_type['ip']
+      machine.vm.synced_folder ".", "/vagrant", disabled: true
 
-      machine.vm.provider 'virtualbox' do |vbox|
-#        vbox.name = machine.vm.hostname
+      machine.vm.provider :virtualbox do |vbox|
         vbox.cpus = machine_type['cpus'] || 2
         vbox.memory = machine_type['memory'] || 2048
+      end
+
+      machine.vm.provider :libvirt do |domain|
+        domain.uri = 'qemu+unix:///system'
+        domain.driver = 'kvm'
+        domain.cpus = machine_type['cpus'] || 2
+        domain.memory = machine_type["memory"] || 2048
       end
 
       # Only execute once the Ansible provisioner,
