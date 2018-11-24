@@ -178,7 +178,7 @@ def main():
     module = AnsibleModule(
         argument_spec=dict(
             state=dict(required=True),
-            name=dict(required=True, default=''),
+            name=dict(required=True),
             url=dict(require=False, default='http://127.0.0.1:8500'),
             rules=dict(required=False, default=''),
             token=dict(required=False, default=''),
