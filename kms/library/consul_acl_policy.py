@@ -68,117 +68,82 @@ EXAMPLES = '''
 
 import json
 import string
-import urllib
 
 from collections import OrderedDict
+from ansible.module_utils.consul import Consul
 from ansible.module_utils.basic import AnsibleModule
 from ansible.module_utils.urls import fetch_url
 
-class ConsulACL(object):
+class ConsulACLPolicy(Consul):
 
     STATES = [ 'exists' ]
 
     def __init__(self, module):
-        """Takes an AnsibleModule object to set up Consul Event interaction"""
-        self.module = module
+        super(ConsulACLPolicy, self).__init__(module)
         self.state = string.lower(module.params.get('state', ''))
-        self.url = module.params.get('url', 'http://127.0.0.1:8500')
         self.name = module.params.get('name', '')
         self.rules = module.params.get('rules', '')
-        self.token = module.params.get('token', '')
-        self.params = OrderedDict({})
-        self.req_data = ''
 
     def run_cmd(self):
-        self.validate()
+        self._validate()
         method = getattr(self, '_' + self.state)
         method()
 
-    def validate(self):
+    def _validate(self):
         if not self.state or self.state not in self.STATES:
             self.module.fail_json(msg='State is required and must be one of %r' % self.STATES)
 
     def _exists(self):
         try:
-            policy = self._get_policy_by_name(self.name)
+            response = self._get_policy_by_name(self.name)
+            changed = False
 
-            if policy:
-                if policy['Rules'] == self.rules:
-                    self.module.exit_json(changed=False, succeeded=True, msg="Policy {} already exists".format(self.name))
-                self.id = policy['ID']
-                self._update_policy()
+            if response:
+                if response['Rules'] != self.rules:
+                    self.id = response['ID']
+                    response = self._update_policy()
+                    changed = True
             else:
-                self._create_policy()
+                response = self._create_policy()
+                changed = True
+
+            self.module.exit_json(changed=changed, succeeded=True, policy=response)
 
         except Exception as e:
             self.module.fail_json(msg="Failed: {}".format(str(e)))
 
     def _get_policy_by_name(self, name):
-        url = "%s/v1/acl/policies" % (self.url)
-        headers = { 'X-Consul-Token': self.token }
-
-        (response, info) = fetch_url(module, url, headers=headers, method='GET')
-
-        if not response:
-            raise Exception(info)
-
-        policies = json.loads(response.read())
+        policies = self._get('/v1/acl/policies')
         for p in policies:
             if p['Name'] == self.name:
                 return self._get_policy_by_id(p['ID'])
 
     def _get_policy_by_id(self, id):
-        url = "%s/v1/acl/policy/%s" % (self.url, id)
-        headers = { 'X-Consul-Token': self.token }
-
-        (response, info) = fetch_url(module, url, headers=headers, method='GET')
-        return json.loads(response.read())
+        return self._get("/v1/acl/policy/%s" % id)
 
     def _create_policy(self):
-        url = "%s/v1/acl/policy" % (self.url)
-        body = self._body()
-        headers = { 'X-Consul-Token': self.token }
-
-        (response, info) = fetch_url(module, url, data=json.dumps(body), headers=headers, method='PUT')
-        self._handle_response(response, info)
+        return self._put('/v1/acl/policy', self._body())
 
     def _update_policy(self):
-        url = "%s/v1/acl/policy/%s" % (self.url, self.id)
-        body = self._body()
-        headers = { 'X-Consul-Token': self.token }
-
-        (response, info) = fetch_url(module, url, data=json.dumps(body), headers=headers, method='PUT')
-        self._handle_response(response, info)
+        return self._put("/v1/acl/policy/%s" % self.id, self._body())
 
     def _body(self):
         valid_attrs = {
             "name": "Name",
             "rules": "Rules"
         }
-        params = OrderedDict({})
+        body = OrderedDict({})
         for attr, name in valid_attrs.iteritems():
             if hasattr(self, attr) and getattr(self, attr):
-                params[name] = getattr(self, attr)
-        return params
-
-    def _handle_response(self, response, info):
-        code = info['status']
-        if code != 200:
-            self.module.fail_json(msg="Failed with status {}".format(code), value=info)
-        else:
-            changed = True
-            try:
-                parsed_response = json.loads(response.read())
-            except:
-                parsed_response = info
-            self.module.exit_json(changed=changed, succeeded=True, status=code, value=parsed_response)
+                body[name] = getattr(self, attr)
+        return body
 
 def main():
     global module
     module = AnsibleModule(
         argument_spec=dict(
-            state=dict(required=True),
             name=dict(required=True),
+            state=dict(required=False, default='exists'),
             url=dict(require=False, default='http://127.0.0.1:8500'),
             rules=dict(required=False, default=''),
             token=dict(required=False, default=''),
@@ -191,8 +156,8 @@ def main():
     if module.check_mode:
         module.exit_json(changed=False)
 
-    consul_status = ConsulACL(module)
-    consul_status.run_cmd()
+    consul_acl_policy = ConsulACLPolicy(module)
+    consul_acl_policy.run_cmd()
 
 if __name__ == '__main__':
     main()

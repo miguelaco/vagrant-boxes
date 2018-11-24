@@ -1,0 +1,53 @@
+---
+
+- hosts: all
+  become: yes
+  vars:
+    consul_domain: kms
+    consul_init_dir: "{{ playbook_dir }}/.consul_init"
+    policy_name: new4
+
+  tasks:
+  - name: Lookup root_token file
+    set_fact:
+      consul_root_token: "{{ lookup('file', '{{ consul_init_dir }}/root_token') }}"
+
+  - name: Create new policy
+    consul_acl_policy:
+      name: "{{ policy_name }}"
+      rules: "node_prefix \"\" { policy = \"write\" } service_prefix \"\" { policy = \"read\" }"
+      token: "{{ consul_root_token }}"
+    run_once: yes
+
+  - name: Create existing policy
+    consul_acl_policy:
+      state: exists
+      name: "{{ policy_name }}"
+      rules: "node_prefix \"\" { policy = \"write\" } service_prefix \"\" { policy = \"read\" }"
+      token: "{{ consul_root_token }}"
+    run_once: yes
+
+  - name: Update existing policy
+    consul_acl_policy:
+      name: "{{ policy_name }}"
+      rules: "node_prefix \"\" { policy = \"read\" } service_prefix \"\" { policy = \"read\" }"
+      token: "{{ consul_root_token }}"
+    run_once: yes
+
+  - name: Forbidden
+    consul_acl_policy:
+      state: exists
+      name: "{{ policy_name }}"
+      rules: "node_prefix \"\" { policy = \"read\" } service_prefix \"\" { policy = \"read\" }"
+      token: invalid
+    ignore_errors: true
+    run_once: yes
+
+  - name: Hostname not found
+    consul_acl_policy:
+      url: http://nohost:8500
+      name: "{{ policy_name }}"
+      rules: "node_prefix \"\" { policy = \"read\" } service_prefix \"\" { policy = \"read\" }"
+      token: "{{ consul_root_token }}"
+    ignore_errors: true
+    run_once: yes
