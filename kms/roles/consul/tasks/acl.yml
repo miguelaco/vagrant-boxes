@@ -28,7 +28,6 @@
 
 - name: Create agent ACL policy
   consul_acl_policy:
-    state: exists
     name: agent_acl
     rules: "node_prefix \"\" { policy = \"write\" } service_prefix \"\" { policy = \"read\" }"
     token: "{{ consul_root_token }}"
@@ -79,7 +78,6 @@
 
 - name: Create anonymous ACL policy
   consul_acl_policy:
-    state: exists
     name: anonymous_acl
     rules: "node_prefix \"\" { policy = \"read\" } service_prefix \"\" { policy = \"read\" }"
     token: "{{ consul_root_token }}"
