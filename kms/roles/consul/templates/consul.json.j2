@@ -33,12 +33,16 @@
     "http": 8500
   },
 {% endif %}
-{% if acl_agent_token is defined %}
-  "acl_agent_token": "{{ acl_agent_token }}",
-  "acl_default_policy": "deny",
+  "acl": {
+{% if agent_token is defined %}
+    "enabled": true,
+    "default_policy": "deny",
+    "down_policy": "extend-cache",
+    "tokens" : {
+      "agent": "{{ agent_token }}"
+    }
 {% else %}
-  "acl_default_policy": "allow",
+    "enabled": true
 {% endif %}
-  "acl_datacenter": "{{ consul_datacenter }}",
-  "acl_down_policy": "deny"
+  }
 }

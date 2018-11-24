@@ -1,8 +1,8 @@
 ---
 
-vault_version: 0.10.1
-vault_home: /usr/local
-vault_config_file: /etc/vault.hcl
+vault_version: 0.11.4
+vault_home: /opt/eos/vault
+vault_config_file: "{{ vault_home }}/conf/vault.hcl"
 
 consul_node_name: "{{ inventory_hostname_short }}"
 consul_domain: consul

@@ -81,3 +81,6 @@
 
 - name: Setup pki
   import_tasks: pki.yml
+
+- name: Securize
+  import_tasks: securize.yml

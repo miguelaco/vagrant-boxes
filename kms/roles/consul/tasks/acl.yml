@@ -4,71 +4,66 @@
   uri:
     url: http://127.0.0.1:8500/v1/acl/bootstrap
     method: PUT
-    status_code: 200, 403
-  register: root_token
-  no_log: no
+    status_code: 200, 403, 500
+  register: root_token_response
+  no_log: not debug | default(true)
+  until: root_token_response.status == 200 or root_token_response.status == 403
+  retries: 10
   run_once: true
 
-- name: Save consul root_token
+- name: Set consul_root_token fact
+  set_fact:
+    consul_root_token: "{{ root_token_response.json.SecretID }}"
+  no_log: not debug | default(true)
+  when: root_token_response.status == 200 and root_token_response.json
+
+- name: Save consul_root_token
   local_action:
     copy
-      content={{ root_token.json.ID }}
+      content={{ consul_root_token }}
       dest={{ consul_init_dir }}/root_token
   become: no
   run_once: yes
-  when: root_token.status == 200 and root_token.json
+  when: root_token_response.status == 200 and root_token_response.json
 
-- name: Lookup root_token file
-  set_fact:
-    consul_root_token: "{{ lookup('file', '{{ consul_init_dir }}/root_token') }}"
-  no_log: not debug | default(true)
+- name: Create agent ACL policy
+  consul_acl_policy:
+    state: exists
+    name: agent_acl
+    rules: "node_prefix \"\" { policy = \"write\" } service_prefix \"\" { policy = \"read\" }"
+    token: "{{ consul_root_token }}"
+  run_once: yes
 
-- name: Create agent ACL
+- name: Create agent token
   uri:
-    url: http://127.0.0.1:8500/v1/acl/create
+    url: http://127.0.0.1:8500/v1/acl/token
     method: PUT
     headers:
       X-Consul-Token: "{{ consul_root_token }}"
     body_format: json
     body:
-      Name: acl_agent_token
-      Type: client
-      Rules: "node \"\" { policy = \"write\" } service \"\" { policy = \"read\" }"
-  register: acl_agent_token_response
+      Description: agent_token
+      Policies:
+        - Name: agent_acl
+  register: agent_token_response
   no_log: not debug | default(true)
-  when: acl_agent_token is undefined
+  when: agent_token is undefined
   run_once: true
 
-- name: Update agent ACL
-  uri:
-    url: http://127.0.0.1:8500/v1/acl/update
-    method: PUT
-    headers:
-      X-Consul-Token: "{{ consul_root_token }}"
-    body_format: json
-    body:
-      Id: "{{ acl_agent_token }}"
-      Name: acl_agent_token
-      Type: client
-      Rules: "node \"\" { policy = \"write\" } service \"\" { policy = \"read\" }"
-  no_log: not debug | default(true)
-  when: acl_agent_token is defined
-  run_once: true
-
-- name: Save acl_agent_token
+- name: Save agent_token
   local_action:
     copy
-      content={{ acl_agent_token_response.json.ID }}
-      dest={{ consul_init_dir }}/acl_agent_token
+      content={{ agent_token_response.json.SecretID }}
+      dest={{ consul_init_dir }}/agent_token
   become: no
   run_once: yes
-  when: acl_agent_token is undefined
+  when: agent_token is undefined
 
-- name: Lookup acl_agent_token file
+- name: Set agent_token fact
   set_fact:
-    acl_agent_token: "{{ lookup('file', '{{ consul_init_dir }}/acl_agent_token') }}"
+    agent_token: "{{ agent_token_response.json.SecretID }}"
   no_log: not debug | default(true)
-  when: acl_agent_token is undefined
+  when: agent_token is undefined
 
 - name: Copy consul config file
   template:
@@ -77,21 +72,29 @@
     owner=consul
     group=consul
     mode=0600
-  when: acl_agent_token_response is not skipped
+  when: agent_token_response is not skipped
   notify:
     - Start consul service
     - Wait for consul leader election
 
-- name: Anonymous ACL
+- name: Create anonymous ACL policy
+  consul_acl_policy:
+    state: exists
+    name: anonymous_acl
+    rules: "node_prefix \"\" { policy = \"read\" } service_prefix \"\" { policy = \"read\" }"
+    token: "{{ consul_root_token }}"
+  run_once: yes
+
+- name: Update anonymous token
   uri:
-    url: http://127.0.0.1:8500/v1/acl/update
+    url: http://127.0.0.1:8500/v1/acl/token/00000000-0000-0000-0000-000000000002
     method: PUT
     headers:
       X-Consul-Token: "{{ consul_root_token }}"
     body_format: json
     body:
-      Id: anonymous
-      Name: Anonymous Token
-      Type: client
-      Rules: "node \"\" { policy = \"read\" } service \"\" { policy = \"read\" }"
+      Description: anonymous_token
+      Policies:
+        - Name: anonymous_acl
+  no_log: not debug | default(true)
   run_once: true

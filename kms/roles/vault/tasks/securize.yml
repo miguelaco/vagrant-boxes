@@ -9,7 +9,7 @@
         method: POST
         status_code: 200, 204
         headers:
-          X-Vault-Token: "{{ vault_init_data.root_token }}"
+          X-Vault-Token: "{{ vault_root_token }}"
         body_format: json
         body:
           allowed_domains:
@@ -24,7 +24,7 @@
         method: POST
         status_code: 200, 204
         headers:
-          X-Vault-Token: "{{ vault_init_data.root_token }}"
+          X-Vault-Token: "{{ vault_root_token }}"
         body_format: json
         body:
           common_name: vault.service.consul
@@ -96,10 +96,8 @@
 
     when: not vault_tls_enabled | default(false) or vault_renew_secrets | default(false)
 
-- always:
-  - meta: flush_handlers
+  always:
+    - meta: flush_handlers
 
 - name: Init vault
-  import_tasks: vault_init.yml
-  tags: vault_init
-
+  import_tasks: init.yml

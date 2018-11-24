@@ -9,11 +9,16 @@
         name: consul
       tags: [ "consul" ]
 
-    - import_role:
-        name: vault
-      tags: [ "vault" ]
-
-    - import_role:
-        name: consul
-        tasks_from: tls
-      tags: [ "consul", "tls" ]
+#    - import_role:
+#        name: vault
+#      tags: [ "vault" ]
+#
+#    - import_role:
+#        name: consul
+#        tasks_from: tls
+#      tags: [ "consul", "tls" ]
+#
+#    - name: Bootstrap
+#      consul_acl:
+#        action: bootstrap
+#      run_once: yes

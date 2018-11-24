@@ -19,8 +19,9 @@
   with_items:
     - "{{ consul_home }}"
     - "{{ consul_home }}/bin"
+    - "{{ consul_config_dir }}"
 
-- name: Create consul data and config dir
+- name: Create consul data dir
   file:
     path={{ item }}
     state=directory
@@ -29,7 +30,6 @@
     mode=0755
   with_items:
     - "{{ consul_data_dir }}"
-    - "{{ consul_config_dir }}"
 
 - name: Create consul init directory
   local_action: file path={{ consul_init_dir }} state=directory
@@ -67,17 +67,29 @@
 - name: Setup encryption key
   import_tasks: encrypt.yml
 
-- name: Check acl_agent_token file
-  local_action: stat path={{ consul_init_dir }}/acl_agent_token
-  register: acl_agent_token_file
+- name: Check root_token file
+  local_action: stat path={{ consul_init_dir }}/root_token
+  register: root_token_file
   run_once: yes
   become: no
 
-- name: Lookup acl_agent_token file
+- name: Lookup root_token file
   set_fact:
-    acl_agent_token: "{{ lookup('file', '{{ consul_init_dir }}/acl_agent_token') }}"
+    consul_root_token: "{{ lookup('file', '{{ consul_init_dir }}/root_token') }}"
   no_log: not debug | default(true)
-  when: acl_agent_token_file.stat.exists
+  when: root_token_file.stat.exists
+
+- name: Check agent_token file
+  local_action: stat path={{ consul_init_dir }}/agent_token
+  register: agent_token_file
+  run_once: yes
+  become: no
+
+- name: Lookup agent_token file
+  set_fact:
+    agent_token: "{{ lookup('file', '{{ consul_init_dir }}/agent_token') }}"
+  no_log: not debug | default(true)
+  when: agent_token_file.stat.exists
 
 - name: Check cert serial number file
   local_action: stat path={{ consul_init_dir }}/cert_serial_number

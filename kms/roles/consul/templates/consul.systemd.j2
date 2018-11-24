@@ -8,7 +8,7 @@ Environment="GOMAXPROCS=`nproc`"
 Restart=always
 User=consul
 Group=consul
-ExecStart={{ consul_home }}/bin/consul agent -config-dir {{ consul_config_dir }} -config-file={{ consul_config_file }}
+ExecStart={{ consul_home }}/bin/consul agent -config-file={{ consul_config_file }}
 ExecReload=/bin/kill -HUP $MAINPID
 KillSignal=SIGINT
 

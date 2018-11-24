@@ -1,11 +1,11 @@
 ---
 
-consul_version: 1.1.0
-consul_home: /usr/local
+consul_version: 1.4.0
+consul_home: /opt/eos/consul
 consul_data_dir: /var/consul
-consul_config_dir: /etc/consul.d
-consul_config_file: /etc/consul.json
-consul_secrets_dir: /etc/consul/secrets
+consul_config_dir: "{{ consul_home }}/conf"
+consul_config_file: "{{ consul_config_dir }}/consul.json"
+consul_secrets_dir: "{{ consul_config_dir }}/secrets"
 consul_reset_tls: no
 
 consul_node_name: "{{ inventory_hostname_short }}"
