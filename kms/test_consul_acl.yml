@@ -1,0 +1,134 @@
+---
+
+- hosts: all
+  become: yes
+  vars:
+    consul_domain: kms
+    consul_init_dir: "{{ playbook_dir }}/.consul_init"
+    policy_name_1: my_first_policy
+    policy_name_2: my_second_policy
+
+  tasks:
+  - name: Lookup root_token file
+    set_fact:
+      consul_root_token: "{{ lookup('file', '{{ consul_init_dir }}/root_token') }}"
+
+  - name: Create new policy
+    consul_acl_policy:
+      name: "{{ policy_name_1 }}"
+      rules: "node_prefix \"\" { policy = \"write\" } service_prefix \"\" { policy = \"read\" }"
+      token: "{{ consul_root_token }}"
+    register: policy_1_result
+    run_once: yes
+
+  - name: Create existing policy
+    consul_acl_policy:
+      state: exists
+      name: "{{ policy_name_1 }}"
+      rules: "node_prefix \"\" { policy = \"write\" } service_prefix \"\" { policy = \"read\" }"
+      token: "{{ consul_root_token }}"
+    run_once: yes
+
+  - name: Update existing policy
+    consul_acl_policy:
+      name: "{{ policy_name_1 }}"
+      rules: "node_prefix \"\" { policy = \"read\" } service_prefix \"\" { policy = \"read\" }"
+      token: "{{ consul_root_token }}"
+    run_once: yes
+
+  - name: With items
+    consul_acl_policy:
+      name: "{{ item }}"
+      rules: "node_prefix \"\" { policy = \"read\" } service_prefix \"\" { policy = \"read\" }"
+      token: "{{ consul_root_token }}"
+    with_items:
+      - "{{ policy_name_1 }}"
+      - "{{ policy_name_2 }}"
+    run_once: yes
+
+  - name: Forbidden
+    consul_acl_policy:
+      state: exists
+      name: "{{ policy_name_1 }}"
+      rules: "node_prefix \"\" { policy = \"read\" } service_prefix \"\" { policy = \"read\" }"
+      token: invalid
+    ignore_errors: true
+    run_once: yes
+
+  - name: Hostname not found
+    consul_acl_policy:
+      url: http://nohost:8500
+      name: "{{ policy_name_1 }}"
+      rules: "node_prefix \"\" { policy = \"read\" } service_prefix \"\" { policy = \"read\" }"
+      token: "{{ consul_root_token }}"
+    ignore_errors: true
+    run_once: yes
+
+  - name: Create token with no policy
+    consul_acl_token:
+      token: "{{ consul_root_token }}"
+    run_once: yes
+
+  - name: Create token with policy Name
+    consul_acl_token:
+      policies:
+        - Name: "{{ policy_name_1 }}"
+      token: "{{ consul_root_token }}"
+    run_once: yes
+
+  - name: Create token with policy ID
+    consul_acl_token:
+      policies: '[{ "ID": "{{ policy_1_result.policy.ID }}" }]'
+      token: "{{ consul_root_token }}"
+    run_once: yes
+
+  - name: Create token with two policies
+    consul_acl_token:
+      policies:
+        - Name: "{{ policy_name_1 }}"
+        - Name: "{{ policy_name_2 }}"
+      token: "{{ consul_root_token }}"
+    register: token_response
+    run_once: yes
+
+  - name: Update token with no change
+    consul_acl_token:
+      secret_id: "{{ token_response.token.SecretID }}"
+      policies:
+        - Name: "{{ policy_name_2 }}"
+        - ID: "{{ policy_1_result.policy.ID }}"
+      token: "{{ consul_root_token }}"
+    run_once: yes
+
+  - name: Update token with first policy
+    consul_acl_token:
+      secret_id: "{{ token_response.token.SecretID }}"
+      policies:
+        - Name: "{{ policy_name_1 }}"
+      token: "{{ consul_root_token }}"
+    run_once: yes
+
+  - name: Update token with second policy
+    consul_acl_token:
+      secret_id: "{{ token_response.token.SecretID }}"
+      policies:
+        - Name: "{{ policy_name_2 }}"
+      token: "{{ consul_root_token }}"
+    run_once: yes
+
+  - name: Update token with non existing policy
+    consul_acl_token:
+      secret_id: "{{ token_response.token.SecretID }}"
+      policies:
+        - Name: "non-existing"
+      token: "{{ consul_root_token }}"
+    ignore_errors: true
+    run_once: yes
+
+  - name: Create token with invalid ID
+    consul_acl_token:
+      policies:
+        - ID: invalid
+      token: "{{ consul_root_token }}"
+    ignore_errors: true
+    run_once: yes

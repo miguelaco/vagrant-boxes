@@ -24,7 +24,7 @@ ANSIBLE_METADATA = {'metadata_version': '1.1',
 
 DOCUMENTATION = '''
 ---
-module: consul_acl_policy
+module: consul_acl_token
 version_added: "1.9"
 author: MA
 short_description: Interact with Consul ACL policy API
@@ -41,13 +41,13 @@ options:
       - Consul url
     required: false
     default: http://127.0.0.1:8500
-  name:
+  secret_id:
     description:
-      - Name of ACL policy
-    required: true
-  rules:
+      - SecretID of token to update
+    required: false
+  policies:
     description:
-      - Policy rules to set or update
+      - List of policies that should be applied to the token
     required: false
   token:
     description:
@@ -59,11 +59,18 @@ requirements: [ ]
 '''
 
 EXAMPLES = '''
-- name: Create ACL policy
-  consul_acl_policy:
-    state: exists
-    name: my_policy
-    rules: "node_prefix \"\" { policy = \"write\" } service_prefix \"\" { policy = \"read\" }"
+- name: Create token with policy by Name
+  consul_acl_token:
+    policies:
+      - Name: mypolicy
+    token: master_token
+
+- name: Update token with no change
+  consul_acl_token:
+    secret_id: token_secret_id
+    policies:
+      - Name: policy_1_name
+      - ID: policy_2_id
     token: master_token
 '''
 
@@ -74,16 +81,17 @@ from collections import OrderedDict
 from ansible.module_utils.consul import Consul
 from ansible.module_utils.basic import AnsibleModule
 from ansible.module_utils.urls import fetch_url
+from ansible.module_utils.six import string_types
 
-class ConsulACLPolicy(Consul):
+class ConsulACLToken(Consul):
 
     STATES = [ 'exists' ]
 
     def __init__(self, module):
-        super(ConsulACLPolicy, self).__init__(module)
+        super(ConsulACLToken, self).__init__(module)
         self.state = string.lower(module.params.get('state', ''))
-        self.name = module.params.get('name', '')
-        self.rules = module.params.get('rules', '')
+        self.secret_id = module.params.get('secret_id', '')
+        self.policies = module.params.get('policies', [])
 
     def run_cmd(self):
         self._validate()
@@ -96,42 +104,52 @@ class ConsulACLPolicy(Consul):
 
     def _exists(self):
         try:
-            response = self._get_policy_by_name(self.name)
             changed = False
-
-            if response:
-                if response['Rules'] != self.rules:
-                    self.id = response['ID']
-                    response = self._update_policy()
+            if self.secret_id:
+                response = self._get_token(self.secret_id)
+                if response and self._needs_update(response['Policies']):
+                    response = self._update_token(response['AccessorID'])
                     changed = True
             else:
-                response = self._create_policy()
+                response = self._create_token()
                 changed = True
-
-            self.module.exit_json(changed=changed, succeeded=True, policy=response)
+            self.module.exit_json(changed=changed, succeeded=True, token=response)
 
         except Exception as e:
             self.module.fail_json(msg="Failed: {}".format(str(e)))
 
-    def _get_policy_by_name(self, name):
-        policies = self._get('/v1/acl/policies')
-        for p in policies:
-            if p['Name'] == self.name:
-                return self._get_policy_by_id(p['ID'])
+    def _get_token(self, id):
+        return self._get('/v1/acl/token/self', id)
 
-    def _get_policy_by_id(self, id):
-        return self._get("/v1/acl/policy/%s" % id)
+    def _create_token(self):
+        return self._put('/v1/acl/token', self._body())
 
-    def _create_policy(self):
-        return self._put('/v1/acl/policy', self._body())
+    def _update_token(self, accessor_id):
+        return self._put("/v1/acl/token/%s" % accessor_id, self._body())
 
-    def _update_policy(self):
-        return self._put("/v1/acl/policy/%s" % self.id, self._body())
+    def _needs_update(self, policies):
+        if len(self.policies) != len(policies):
+            return True
+        self_names = list(map(lambda x: x.get('Name', None), self.policies))
+        self_names = list(filter(None, self_names))
+        policies_names = list(map(lambda x: x['Name'], policies))
+
+        names = [x for x in self_names if x not in policies_names]
+        if len(names) > 0:
+            return True
+
+        self_ids = list(map(lambda x: x.get('ID', None), self.policies))
+        self_ids = list(filter(None, self_ids))
+        policies_ids = list(map(lambda x: x['ID'], policies))
+
+        ids = [x for x in self_ids if x not in policies_ids]
+        if len(ids) > 0:
+            return True
+        return False
 
     def _body(self):
         valid_attrs = {
-            "name": "Name",
-            "rules": "Rules"
+            "policies": "Policies"
         }
         body = OrderedDict({})
         for attr, name in valid_attrs.iteritems():
@@ -143,10 +161,10 @@ def main():
     global module
     module = AnsibleModule(
         argument_spec=dict(
-            name=dict(required=True),
             state=dict(required=False, default='exists'),
             url=dict(require=False, default='http://127.0.0.1:8500'),
-            rules=dict(required=False, default=''),
+            secret_id=dict(required=False, default=''),
+            policies=dict(required=False, type='raw', default=[]),
             token=dict(required=False, default=''),
             validate_certs=dict(required=False, default=True)
         ),
@@ -157,8 +175,8 @@ def main():
     if module.check_mode:
         module.exit_json(changed=False)
 
-    consul_acl_policy = ConsulACLPolicy(module)
-    consul_acl_policy.run_cmd()
+    consul_acl_token = ConsulACLToken(module)
+    consul_acl_token.run_cmd()
 
 if __name__ == '__main__':
     main()

@@ -28,9 +28,10 @@ class Consul(object):
         self.url = module.params.get('url', 'http://127.0.0.1:8500')
         self.token = module.params.get('token', '')
 
-    def _do(self, path, body=None, method='GET'):
+    def _do(self, path, body=None, method='GET', token=None):
         url = self.url + path
-        headers = { 'X-Consul-Token': self.token }
+        token = token if token else self.token
+        headers = { 'X-Consul-Token': token }
 
         response, info = fetch_url(self.module, url, data=json.dumps(body), headers=headers, method=method)
 
@@ -38,11 +39,11 @@ class Consul(object):
             raise Exception(info)
         return json.loads(response.read())
 
-    def _get(self, path):
-        return self._do(path)
+    def _get(self, path, token=None):
+        return self._do(path=path, token=token)
 
-    def _put(self, path, body):
-        return self._do(path, body, 'PUT')
+    def _put(self, path, body=None, token=None):
+        return self._do(path=path, body=body, method='PUT', token=token)
 
-    def _post(self, path, body):
-        return self._do(path, body, 'POST')
+    def _post(self, path, body=None, token=None):
+        return self._do(path=path, body=body, method='POST', token=token)
