@@ -130,21 +130,17 @@ class ConsulACLToken(Consul):
     def _needs_update(self, policies):
         if len(self.policies) != len(policies):
             return True
-        self_names = list(map(lambda x: x.get('Name', None), self.policies))
-        self_names = list(filter(None, self_names))
-        policies_names = list(map(lambda x: x['Name'], policies))
 
-        names = [x for x in self_names if x not in policies_names]
-        if len(names) > 0:
+        self_names = [x['Name'] for x in self.policies if 'Name' in x]
+        policies_names = [x['Name'] for x in policies if 'Name' in x]
+        if len([x for x in self_names if x not in policies_names]) > 0:
             return True
 
-        self_ids = list(map(lambda x: x.get('ID', None), self.policies))
-        self_ids = list(filter(None, self_ids))
-        policies_ids = list(map(lambda x: x['ID'], policies))
-
-        ids = [x for x in self_ids if x not in policies_ids]
-        if len(ids) > 0:
+        self_ids = [x['ID'] for x in self.policies if 'ID' in x]
+        policies_ids = [x['ID'] for x in policies if 'ID' in x]
+        if len([x for x in self_ids if x not in policies_ids]) > 0:
             return True
+
         return False
 
     def _body(self):
