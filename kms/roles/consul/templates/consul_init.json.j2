@@ -1,0 +1,11 @@
+{
+{% if consul_encrypt is defined %}
+  "consul_encrypt": "{{ consul_encrypt }}",
+{% endif %}
+{% if consul_root_token is defined %}
+  "consul_root_token": "{{ consul_root_token }}",
+{% endif %}
+{% if consul_agent_token is defined %}
+  "consul_agent_token": "{{ consul_agent_token }}"
+{% endif %}
+}
