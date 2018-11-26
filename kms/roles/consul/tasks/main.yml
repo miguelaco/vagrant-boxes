@@ -64,32 +64,54 @@
     - Start consul service
     - Wait for consul leader election
 
-- name: Setup encryption key
-  import_tasks: encrypt.yml
-
-- name: Check root_token file
-  local_action: stat path={{ consul_init_dir }}/root_token
-  register: root_token_file
+- name: Check current config file
+  stat: path={{ consul_config_file }}
+  register: current_conf_file
   run_once: yes
   become: no
 
-- name: Lookup root_token file
-  set_fact:
-    consul_root_token: "{{ lookup('file', '{{ consul_init_dir }}/root_token') }}"
-  no_log: not debug | default(true)
-  when: root_token_file.stat.exists
-
-- name: Check agent_token file
-  local_action: stat path={{ consul_init_dir }}/agent_token
-  register: agent_token_file
+- name: Get current config file
+  slurp:
+    src: "{{ consul_config_file }}"
+  register: current_conf_b64
   run_once: yes
-  become: no
+  when: current_conf_file.stat.exists
 
-- name: Lookup agent_token file
+- name: Set current_conf fact
   set_fact:
-    agent_token: "{{ lookup('file', '{{ consul_init_dir }}/agent_token') }}"
-  no_log: not debug | default(true)
-  when: agent_token_file.stat.exists
+    current_conf: "{{ current_conf_b64.content | b64decode }}"
+  run_once: yes
+  when: current_conf_b64.content is defined
+
+- name: Set consul_encrypt fact from current_conf
+  set_fact:
+    consul_encrypt: "{{ current_conf.encrypt }}"
+  run_once: yes
+  when: current_conf is defined
+
+- name: Set consul_root_token fact from current_conf
+  set_fact:
+    consul_root_token: "{{ current_conf.acl.tokens.master }}"
+  run_once: yes
+  when: current_conf is defined and current_conf.acl.tokens is defined
+
+- name: Set consul_agent_token fact from current_conf
+  set_fact:
+    consul_agent_token: "{{ current_conf.acl.tokens.agent }}"
+  run_once: yes
+  when: current_conf is defined and current_conf.acl.tokens is defined
+
+- name: Generate encryption key
+  command: "{{ consul_home }}/bin/consul keygen"
+  register: keygen
+  run_once: yes
+  when: consul_encrypt is undefined
+
+- name: Set consul_encrypt fact
+  set_fact:
+    consul_encrypt: "{{ keygen.stdout }}"
+  run_once: yes
+  when: consul_encrypt is undefined
 
 - name: Check cert serial number file
   local_action: stat path={{ consul_init_dir }}/cert_serial_number

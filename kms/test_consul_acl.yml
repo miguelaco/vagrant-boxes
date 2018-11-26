@@ -68,6 +68,21 @@
     consul_acl_token:
       secret_id:
       token: "{{ consul_root_token }}"
+    register: token_response
+    run_once: yes
+
+  - name: Update token with no change
+    consul_acl_token:
+      secret_id: "{{ token_response.token.SecretID }}"
+      token: "{{ consul_root_token }}"
+    run_once: yes
+
+  - name: Update token with first policy
+    consul_acl_token:
+      secret_id: "{{ token_response.token.SecretID }}"
+      policies:
+        - Name: "{{ policy_name_1 }}"
+      token: "{{ consul_root_token }}"
     run_once: yes
 
   - name: Create token with policy Name

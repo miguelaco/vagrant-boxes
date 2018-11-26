@@ -8,6 +8,7 @@
   register: root_token_response
   no_log: not debug | default(true)
   until: root_token_response.status == 200 or root_token_response.status == 403
+  changed_when: root_token_response.status == 200
   retries: 10
   run_once: true
 
@@ -15,15 +16,6 @@
   set_fact:
     consul_root_token: "{{ root_token_response.json.SecretID }}"
   no_log: not debug | default(true)
-  when: root_token_response.status == 200 and root_token_response.json
-
-- name: Save consul_root_token
-  local_action:
-    copy
-      content={{ consul_root_token }}
-      dest={{ consul_init_dir }}/root_token
-  become: no
-  run_once: yes
   when: root_token_response.status == 200 and root_token_response.json
 
 - name: Create agent ACL policy
@@ -34,35 +26,19 @@
   run_once: yes
 
 - name: Create agent token
-  uri:
-    url: http://127.0.0.1:8500/v1/acl/token
-    method: PUT
-    headers:
-      X-Consul-Token: "{{ consul_root_token }}"
-    body_format: json
-    body:
-      Description: agent_token
-      Policies:
-        - Name: agent_acl
+  consul_acl_token:
+    secret_id: "{{ consul_agent_token | default(omit) }}"
+    policies:
+      - Name: agent_acl
+    token: "{{ consul_root_token }}"
   register: agent_token_response
-  no_log: not debug | default(true)
-  when: agent_token is undefined
-  run_once: true
-
-- name: Save agent_token
-  local_action:
-    copy
-      content={{ agent_token_response.json.SecretID }}
-      dest={{ consul_init_dir }}/agent_token
-  become: no
   run_once: yes
-  when: agent_token is undefined
 
-- name: Set agent_token fact
+- name: Set consul_agent_token fact
   set_fact:
-    agent_token: "{{ agent_token_response.json.SecretID }}"
+    consul_agent_token: "{{ agent_token_response.token.SecretID }}"
   no_log: not debug | default(true)
-  when: agent_token is undefined
+  when: consul_agent_token is undefined
 
 - name: Copy consul config file
   template:
@@ -71,7 +47,6 @@
     owner=consul
     group=consul
     mode=0600
-  when: agent_token_response is not skipped
   notify:
     - Start consul service
     - Wait for consul leader election
@@ -84,15 +59,9 @@
   run_once: yes
 
 - name: Update anonymous token
-  uri:
-    url: http://127.0.0.1:8500/v1/acl/token/00000000-0000-0000-0000-000000000002
-    method: PUT
-    headers:
-      X-Consul-Token: "{{ consul_root_token }}"
-    body_format: json
-    body:
-      Description: anonymous_token
-      Policies:
-        - Name: anonymous_acl
-  no_log: not debug | default(true)
-  run_once: true
+  consul_acl_token:
+    secret_id: anonymous
+    policies:
+      - Name: anonymous_acl
+    token: "{{ consul_root_token }}"
+  run_once: yes

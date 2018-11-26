@@ -34,12 +34,13 @@
   },
 {% endif %}
   "acl": {
-{% if agent_token is defined %}
+{% if consul_root_token is defined and consul_agent_token is defined %}
     "enabled": true,
     "default_policy": "deny",
     "down_policy": "extend-cache",
     "tokens" : {
-      "agent": "{{ agent_token }}"
+      "master": "{{ consul_root_token }}",
+      "agent": "{{ consul_agent_token }}"
     }
 {% else %}
     "enabled": true

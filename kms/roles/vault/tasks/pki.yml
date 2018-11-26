@@ -24,7 +24,7 @@
       config:
         max_lease_ttl: "87600h"
   run_once: true
-  when: mounts.json['pki/'] is not defined
+  when: mounts.json['pki/'] is undefined
 
 - name: Get root ca
   uri:
@@ -78,7 +78,7 @@
       config:
         max_lease_ttl: "43800h"
   run_once: true
-  when: mounts.json['pki_int/'] is not defined
+  when: mounts.json['pki_int/'] is undefined
 
 - name: Get intermediate ca
   uri:

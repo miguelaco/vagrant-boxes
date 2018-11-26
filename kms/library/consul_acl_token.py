@@ -128,6 +128,8 @@ class ConsulACLToken(Consul):
         return self._put("/v1/acl/token/%s" % accessor_id, self._body())
 
     def _needs_update(self, policies):
+        policies = policies if policies is not None else []
+
         if len(self.policies) != len(policies):
             return True
 
