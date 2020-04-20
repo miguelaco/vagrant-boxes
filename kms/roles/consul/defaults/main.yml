@@ -6,7 +6,7 @@ consul_data_dir: /var/consul
 consul_config_dir: "{{ consul_home }}/conf"
 consul_config_file: "{{ consul_config_dir }}/consul.json"
 consul_secrets_dir: "{{ consul_config_dir }}/secrets"
-consul_reset_tls: no
+consul_reset: no
 
 consul_node_name: "{{ inventory_hostname_short }}"
 consul_domain: consul

@@ -16,7 +16,16 @@
   set_fact:
     consul_root_token: "{{ root_token_response.json.SecretID }}"
   no_log: not debug | default(true)
+  run_once: yes
   when: root_token_response.status == 200 and root_token_response.json
+
+- name: Save consul_init locally
+  local_action:
+    template
+      src=consul_init.json.j2
+      dest={{ consul_init_dir }}
+  become: no
+  run_once: yes
 
 - name: Create agent ACL policy
   consul_acl_policy:
@@ -25,7 +34,7 @@
     token: "{{ consul_root_token }}"
   run_once: yes
 
-- name: Create agent token
+- name: Create agent ACL token
   consul_acl_token:
     secret_id: "{{ consul_agent_token | default(omit) }}"
     policies:
@@ -38,7 +47,16 @@
   set_fact:
     consul_agent_token: "{{ agent_token_response.token.SecretID }}"
   no_log: not debug | default(true)
+  run_once: yes
   when: consul_agent_token is undefined
+
+- name: Save consul_init locally
+  local_action:
+    template
+      src=consul_init.json.j2
+      dest={{ consul_init_dir }}
+  become: no
+  run_once: yes
 
 - name: Copy consul config file
   template:
@@ -58,7 +76,7 @@
     token: "{{ consul_root_token }}"
   run_once: yes
 
-- name: Update anonymous token
+- name: Update anonymous ACL token
   consul_acl_token:
     secret_id: anonymous
     policies:

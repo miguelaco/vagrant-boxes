@@ -21,20 +21,19 @@
     - "{{ consul_home }}/bin"
     - "{{ consul_config_dir }}"
 
+- name: Reset data
+  file:
+    path={{ consul_data_dir }}
+    state=absent
+  when: consul_reset
+
 - name: Create consul data dir
   file:
-    path={{ item }}
+    path={{ consul_data_dir }}
     state=directory
     owner=consul
     group=consul
     mode=0755
-  with_items:
-    - "{{ consul_data_dir }}"
-
-- name: Create consul init directory
-  local_action: file path={{ consul_init_dir }} state=directory
-  become: no
-  run_once: yes
 
 - name: Check consul package
   local_action:
@@ -64,42 +63,20 @@
     - Start consul service
     - Wait for consul leader election
 
-- name: Check current config file
-  stat: path={{ consul_config_file }}
-  register: current_conf_file
+- name: Check consul_init file
+  local_action: stat path={{ consul_init_dir }}
+  register: consul_init_file
   run_once: yes
   become: no
+  when: not consul_reset
 
-- name: Get current config file
-  slurp:
-    src: "{{ consul_config_file }}"
-  register: current_conf_b64
+- name: Load consul_init from local
+  include_vars: "{{ consul_init_dir }}"
   run_once: yes
-  when: current_conf_file.stat.exists
-
-- name: Set current_conf fact
-  set_fact:
-    current_conf: "{{ current_conf_b64.content | b64decode }}"
-  run_once: yes
-  when: current_conf_b64.content is defined
-
-- name: Set consul_encrypt fact from current_conf
-  set_fact:
-    consul_encrypt: "{{ current_conf.encrypt }}"
-  run_once: yes
-  when: current_conf is defined
-
-- name: Set consul_root_token fact from current_conf
-  set_fact:
-    consul_root_token: "{{ current_conf.acl.tokens.master }}"
-  run_once: yes
-  when: current_conf is defined and current_conf.acl.tokens is defined
-
-- name: Set consul_agent_token fact from current_conf
-  set_fact:
-    consul_agent_token: "{{ current_conf.acl.tokens.agent }}"
-  run_once: yes
-  when: current_conf is defined and current_conf.acl.tokens is defined
+  become: no
+  when:
+    - not consul_reset
+    - consul_init_file.stat.exists
 
 - name: Generate encryption key
   command: "{{ consul_home }}/bin/consul keygen"
@@ -113,17 +90,13 @@
   run_once: yes
   when: consul_encrypt is undefined
 
-- name: Check cert serial number file
-  local_action: stat path={{ consul_init_dir }}/cert_serial_number
-  register: consul_cert_serial_number_result
-  run_once: yes
+- name: Save consul_init locally
+  local_action:
+    template
+      src=consul_init.json.j2
+      dest={{ consul_init_dir }}
   become: no
-
-- name: Lookup cert serial number file
-  set_fact:
-    consul_cert_serial_number: "{{ lookup('file', '{{ consul_init_dir }}/cert_serial_number') }}"
-  no_log: not debug | default(true)
-  when: consul_cert_serial_number_result.stat.exists
+  run_once: yes
 
 - name: Copy consul config file
   template:
