@@ -1,7 +1,7 @@
 Vagrant.configure("2") do |config|
     config.vm.define :ldap do |ldap|
         ldap.vm.provision :shell, inline: "echo 'Provisioning ldap'"
-        ldap.vm.box = "debian/jessie64"
+        ldap.vm.box = "debian/buster64"
         ldap.vm.hostname = "ldap"
     end
 end

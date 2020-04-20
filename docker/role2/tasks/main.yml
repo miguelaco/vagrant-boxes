@@ -1,0 +1,4 @@
+---
+- file:
+    path: /root/role2
+    state: touch

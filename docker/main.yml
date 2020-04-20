@@ -2,7 +2,7 @@
 - hosts: all
   become: yes
   vars:
-    vault_renew_secrets: false
+    role_name: role2
 
   tasks:
   - package: name={{ item }} state=present
@@ -16,4 +16,7 @@
       enabled: yes
       daemon-reload: yes
 
-  - command: docker pull consul
+  - name: Log into DockerHub
+    docker_login:
+      username: eosstratio
+      password: 30s_t34m
